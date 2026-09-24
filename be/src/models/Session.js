@@ -87,9 +87,8 @@ class Session extends Model {
     db.Session.belongsTo(db.Meetup, { foreignKey: 'meetup_id' });
 
     // Logbook과의 복합 외래키 연관관계 (session_id + meetup_id)
-    db.Session.hasMany(db.Logbook, {
-      foreignKey: ['session_id', 'meetup_id']
-    });
+   db.Session.hasMany(db.Logbook, {foreignKey: 'session_id',sourceKey: 'session_id'});
+    
   }
 }
 
