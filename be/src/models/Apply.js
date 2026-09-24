@@ -62,13 +62,11 @@ class Apply extends Model {
     db.Apply.belongsTo(db.Meetup, { foreignKey: 'meetup_id', as: 'meetup' });
 
     // Review와의 1:1 연관관계
-    db.Apply.hasOne(db.Review, { foreignKey: 'apply_id', as: 'review' });
+    db.Apply.hasOne(db.Review, { foreignKey: 'apply_id' });
 
     // Logbook과의 복합 외래키 연관관계 (apply_id + meetup_id)
     db.Apply.hasMany(db.Logbook, {
-      foreignKey: ['apply_id', 'meetup_id'],
-      sourceKey: ['apply_id', 'meetup_id'],
-      as: 'logbooks'
+      foreignKey: ['apply_id', 'meetup_id']
     });
   }
 }

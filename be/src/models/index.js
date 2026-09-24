@@ -1,5 +1,12 @@
+const fs = require('fs');
+const path = require('path');
+const basename = path.basename(__filename);
 const Sequelize = require('sequelize');
-const config = require('../config/config.json')[process.env.NODE_ENV || 'development'];
+
+//  NODE_ENV 환경변수 및 config 안전하게 처리
+const env = process.env.NODE_ENV || 'development';
+const configData = require('../config/config.json');
+const config = configData[env] || configData['development'];
 
 const User = require('./User');
 const Meetup = require('./Meetup');
@@ -8,7 +15,13 @@ const Apply = require('./Apply');
 const Logbook = require('./Logbook');
 const Review = require('./Review');
 
-const sequelize = new Sequelize(config.database, config.username, config.password, config);
+// Sequelize 인스턴스 생성
+const sequelize = new Sequelize(
+  config.database,
+  config.username,
+  config.password,
+  config
+);
 const db = {};
 
 // 1. db 객체에 모델 할당
