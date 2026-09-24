@@ -58,8 +58,8 @@ class Apply extends Model {
   }
 
   static associate(db) {
-    db.Apply.belongsTo(db.User, { foreignKey: 'user_id', as: 'user' });
-    db.Apply.belongsTo(db.Meetup, { foreignKey: 'meetup_id', as: 'meetup' });
+    db.Apply.belongsTo(db.User, { foreignKey: 'user_id'});
+    db.Apply.belongsTo(db.Meetup, { foreignKey: 'meetup_id' });
 
     // Review와의 1:1 연관관계
     db.Apply.hasOne(db.Review, { foreignKey: 'apply_id' });

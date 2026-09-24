@@ -5,7 +5,7 @@ const Sequelize = require('sequelize');
 
 //  NODE_ENV 환경변수 및 config 안전하게 처리
 const env = process.env.NODE_ENV || 'development';
-const configData = require('../config/config.json');
+const configData = require('../config/config.js');
 const config = configData[env] || configData['development'];
 
 const User = require('./User');

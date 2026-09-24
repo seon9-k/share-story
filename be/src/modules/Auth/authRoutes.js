@@ -11,10 +11,10 @@ const createHash = (password) => {
   return hashed;
 }
 
-/* POST /member/sign-up */
+/* POST /auth/sign-up */
 router.post('/sign-up', async (req, res, next) => {
   try {
-    const { phone, nickname, password, lvl } = req.body;
+    const { phone, name, password, lvl } = req.body;
     // 휴대폰 번호 "-" 제거
     const phoneUnderscodeRemove = phone.replaceAll("-", "");
 
@@ -25,16 +25,16 @@ router.post('/sign-up', async (req, res, next) => {
     }
 
     const newPassword = await createHash(password);
-    const result = await Member.create({ phone : phoneUnderscodeRemove, nickname : nickname, password : newPassword,  lvl : lvl });
+    const result = await Member.create({ phone : phoneUnderscodeRemove, name : name, password : newPassword,  lvl : lvl });
 
-    res.status(201).json({ success: true, document : { id : result.id, nickname : result.nickname, phone : result.phone, lvl:result.lvl }, message : '회원가입에 완료되었습니다.' })
+    res.status(201).json({ success: true, document : { id : result.id, name : result.name, phone : result.phone, lvl:result.lvl }, message : '회원가입에 완료되었습니다.' })
 
   } catch (error) {
     next(error, req, res);
   }
 });
 
-/* POST /member/sign-in */
+/* POST /auth/sign-in */
 router.post('/sign-in', async (req, res, next) => {
   try {
     const { phone, password } = req.body;
