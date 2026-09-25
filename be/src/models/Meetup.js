@@ -82,9 +82,9 @@ class Meetup extends Model {
   }
 
   static associate(db) {
-    db.Meetup.belongsTo(db.User, { foreignKey: 'leader_id', as: 'leader' });
-    db.Meetup.hasMany(db.Session, { foreignKey: 'meetup_id', as: 'sessions' });
-    db.Meetup.hasMany(db.Apply, { foreignKey: 'meetup_id', as: 'applies' });
+    db.Meetup.belongsTo(db.User, { foreignKey: 'leader_id' });
+    db.Meetup.hasMany(db.Session, { foreignKey: 'meetup_id' });
+    db.Meetup.hasMany(db.Apply, { foreignKey: 'meetup_id' });
   }
 }
 

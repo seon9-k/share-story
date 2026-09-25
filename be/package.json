@@ -2,7 +2,6 @@
   "name": "share-story-be",
   "version": "1.0.0",
   "description": "쉐어 스토리 백엔드",
-  "type": "module",
   "main": "dist/app.js",
   "engines": {
     "node": ">=22.0.0"
@@ -10,7 +9,7 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/app.js",
-    "dev": "npx tsx watch src/app.ts",
+    "dev": "npx tsx watch src/app.js",
     "seed": "npx tsx src/seeders/seed.ts",
     "db:check": "npx tsx scripts/db-check.ts"
   },
@@ -20,10 +19,11 @@
     "@types/yamljs": "^0.2.34",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.6",
-    "dotenv": "^18.0.2",
+    "dotenv": "^18.0.3",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
     "mime-types": "^3.0.2",
+    "morgan": "^1.12.1",
     "multer": "^2.4.0",
     "pg": "^8.23.0",
     "pg-hstore": "^2.3.4",

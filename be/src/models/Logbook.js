@@ -65,20 +65,14 @@ class Logbook extends Model {
   }
 
   static associate(db) {
-    // Session과의 복합 외래키 (session_id + meetup_id)
-    db.Logbook.belongsTo(db.Session, {
-      foreignKey: ['session_id', 'meetup_id'],
-      targetKey: ['session_id', 'meetup_id'],
-      as: 'session'
-    });
+    // 1. Session과의 외래키 연결 (session_id)
+    db.Logbook.belongsTo(db.Session, { foreignKey: 'session_id',targetKey: 'session_id'});
 
-    // Apply와의 복합 외래키 (apply_id + meetup_id)
-    db.Logbook.belongsTo(db.Apply, {
-      foreignKey: ['apply_id', 'meetup_id'],
-      targetKey: ['apply_id', 'meetup_id'],
-      as: 'apply'
-    });
+    // 2. Apply와의 외래키 연결 (apply_id)
+    db.Logbook.belongsTo(db.Apply, {foreignKey: 'apply_id',targetKey: 'apply_id'});
+
   }
 }
+
 
 module.exports = Logbook;
