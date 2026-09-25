@@ -9,7 +9,7 @@ const errorHandler = require('./common/middleware/errorHandler');
 // const authorization = require('./common/middleware/authorization');
 
 // 기능별 router
-const meetupRouter = require('./modules/meetups/meetup.routes');
+const meetupRouter = require('./modules/meetup/meetup.routes');
 
 const app = express();
 
@@ -24,7 +24,7 @@ sequelize
   .catch((error) => console.log('error : ', error));
 
 // Meetup API
-app.use('/meetups', meetupRouter);
+app.use('/meetup', meetupRouter);
 
 //app.use('/auth', authorization, authRouter);
 // Error Handler는 일반 route 등록 이후에 위치
