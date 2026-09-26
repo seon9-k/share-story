@@ -1,0 +1,272 @@
+/* Section */
+
+.section {
+  padding: 1.5rem;
+
+  background-color: var(--color-canvas);
+  border-radius: 1rem;
+}
+
+.sectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  margin: 0 0 1rem;
+
+  color: var(--color-navy);
+
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.sectionNumber {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+
+  width: 1.5rem;
+  height: 1.5rem;
+
+  color: var(--color-canvas);
+  background-color: var(--color-navy);
+  border-radius: 50%;
+
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+/* Field layout */
+
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.flexInput {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Input */
+
+.input,
+.select {
+  width: 100%;
+
+  padding: 0.625rem 1rem;
+
+  color: var(--color-body);
+  background-color: var(--color-canvas);
+  border: 1px solid var(--color-divider);
+  border-radius: 0.75rem;
+
+  font-family: inherit;
+  font-size: 0.875rem;
+
+  outline: none;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.input::placeholder {
+  color: var(--color-control);
+}
+
+.input:focus,
+.select:focus {
+  border-color: var(--color-ocean);
+
+  box-shadow: 0 0 0 2px rgb(47 107 138 / 10%);
+}
+
+.inputError {
+  border-color: var(--color-action);
+}
+
+.inputError:focus {
+  border-color: var(--color-action);
+
+  box-shadow: 0 0 0 2px rgb(194 79 26 / 10%);
+}
+
+.select {
+  cursor: pointer;
+}
+
+/* Messages */
+
+.helpText {
+  margin: 0.375rem 0 0;
+
+  color: var(--color-control);
+
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.successText {
+  margin: 0.375rem 0 0;
+
+  color: var(--color-ocean);
+
+  font-size: 0.75rem;
+}
+
+.errorText {
+  margin: 0;
+
+  color: var(--color-action);
+
+  font-size: 0.75rem;
+}
+
+/* ID duplicate check */
+
+.checkButton {
+  flex-shrink: 0;
+
+  padding: 0.625rem 1rem;
+
+  color: var(--color-navy);
+  background-color: transparent;
+  border: 1px solid var(--color-navy);
+  border-radius: 0.75rem;
+
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+
+  cursor: pointer;
+
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.checkButton:hover {
+  color: var(--color-canvas);
+  background-color: var(--color-navy);
+}
+
+/* Email */
+
+.at {
+  flex-shrink: 0;
+
+  color: var(--color-control);
+
+  font-weight: 500;
+}
+
+/* Selection buttons */
+
+.optionGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.optionButton {
+  padding: 0.5rem 0.875rem;
+
+  color: var(--color-secondary);
+  background-color: transparent;
+  border: 1px solid var(--color-divider);
+  border-radius: 0.75rem;
+
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 500;
+
+  cursor: pointer;
+
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.optionButton:hover {
+  border-color: var(--color-navy);
+}
+
+.optionButtonSelected {
+  color: var(--color-canvas);
+  background-color: var(--color-navy);
+  border-color: var(--color-navy);
+}
+
+.optionButtonSelected:hover {
+  border-color: var(--color-navy);
+}
+
+/* Gender */
+
+.equalOptionButton {
+  flex: 1;
+
+  padding: 0.625rem;
+
+  color: var(--color-secondary);
+  background-color: transparent;
+  border: 1px solid var(--color-divider);
+  border-radius: 0.75rem;
+
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+
+  cursor: pointer;
+
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.equalOptionButton:hover {
+  border-color: var(--color-navy);
+}
+
+.equalOptionButtonSelected {
+  color: var(--color-canvas);
+  background-color: var(--color-navy);
+  border-color: var(--color-navy);
+}
+
+/* Reading preference */
+
+.fieldLabel {
+  margin: 0 0 0.75rem;
+
+  color: var(--color-control);
+
+  font-size: 0.75rem;
+}
+
+.preferenceGroup + .fieldLabel {
+  margin-top: 1.25rem;
+}
+
+.preferenceGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.readingButton {
+  flex: 1;
+
+  min-width: 5rem;
+}

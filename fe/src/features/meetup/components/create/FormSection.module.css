@@ -1,0 +1,155 @@
+/* Session schedule */
+
+.sessionList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.sessionRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sessionNumber {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+
+  width: 1.5rem;
+  height: 1.5rem;
+
+  color: var(--color-navy);
+  background-color: var(--color-surface);
+  border-radius: 50%;
+
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.sessionDateInput {
+  width: 6rem;
+
+  padding: 0.5rem 0.625rem;
+
+  color: var(--color-body);
+  background-color: var(--color-canvas);
+  border: 1px solid var(--color-divider);
+  border-radius: 0.5rem;
+
+  font-family: inherit;
+  font-size: 0.75rem;
+
+  outline: none;
+
+  transition: border-color 0.2s ease;
+}
+
+.sessionTimeInput {
+  width: 5rem;
+
+  padding: 0.5rem 0.625rem;
+
+  color: var(--color-body);
+  background-color: var(--color-canvas);
+  border: 1px solid var(--color-divider);
+  border-radius: 0.5rem;
+
+  font-family: inherit;
+  font-size: 0.75rem;
+
+  outline: none;
+
+  transition: border-color 0.2s ease;
+}
+
+.sessionTopicInput {
+  flex: 1;
+  min-width: 0;
+
+  padding: 0.5rem 0.625rem;
+
+  color: var(--color-body);
+  background-color: var(--color-canvas);
+  border: 1px solid var(--color-divider);
+  border-radius: 0.5rem;
+
+  font-family: inherit;
+  font-size: 0.75rem;
+
+  outline: none;
+
+  transition: border-color 0.2s ease;
+}
+
+.sessionDateInput:focus,
+.sessionTimeInput:focus,
+.sessionTopicInput:focus {
+  border-color: var(--color-ocean);
+}
+
+.removeButton {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0.25rem;
+
+  color: var(--color-control);
+  background: none;
+  border: 0;
+
+  cursor: pointer;
+
+  transition: color 0.2s ease;
+}
+
+.removeButton:hover {
+  color: var(--color-action);
+}
+
+.removeButton svg {
+  width: 1rem;
+  height: 1rem;
+
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 2;
+}
+
+.addButton {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+
+  margin-top: 0.75rem;
+  padding: 0;
+
+  color: var(--color-ocean);
+  background: none;
+  border: 0;
+
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 500;
+
+  cursor: pointer;
+
+  transition: color 0.2s ease;
+}
+
+.addButton:hover {
+  color: var(--color-navy);
+}
+
+.addButton svg {
+  width: 0.875rem;
+  height: 0.875rem;
+
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 2.5;
+}

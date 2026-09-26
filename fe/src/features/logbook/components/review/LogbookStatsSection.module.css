@@ -1,0 +1,45 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.card {
+  padding: 1rem;
+
+  background-color: var(--color-canvas);
+  border-radius: 1rem;
+
+  text-align: center;
+}
+
+.value {
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.confirmed {
+  color: var(--color-navy);
+}
+
+.submitted {
+  color: var(--color-ocean);
+}
+
+.approved {
+  color: var(--color-action);
+}
+
+.label {
+  margin-top: 0.125rem;
+
+  color: var(--color-control);
+
+  font-size: 0.75rem;
+}
+
+@media (max-width: 480px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

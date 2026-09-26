@@ -1,0 +1,257 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.card {
+  padding: 1.25rem;
+
+  background-color: var(--color-canvas);
+  border-radius: 1rem;
+}
+
+.heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+
+  margin-bottom: 0.75rem;
+}
+
+.title {
+  margin: 0;
+
+  color: var(--color-navy);
+
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.status {
+  flex-shrink: 0;
+
+  padding: 0.25rem 0.625rem;
+
+  border-radius: 9999px;
+
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.sailing {
+  color: var(--color-ocean);
+  background-color: #e8f4f9;
+}
+
+.waiting {
+  color: var(--color-action);
+  background-color: var(--color-subtle);
+}
+
+.completed {
+  color: var(--color-navy);
+  background-color: #eef1f4;
+}
+
+.members {
+  margin: 0 0 0.25rem;
+
+  color: var(--color-secondary);
+
+  font-size: 0.875rem;
+}
+
+.schedule {
+  margin: 0;
+
+  color: var(--color-control);
+
+  font-size: 0.75rem;
+}
+
+/* Logbook */
+
+.logbookArea {
+  margin-top: 1rem;
+  padding-top: 1rem;
+
+  border-top: 1px solid var(--color-surface);
+}
+
+.logbookForm {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.logbookEditor {
+  padding: 0.75rem;
+
+  background-color: var(--color-surface);
+  border-radius: 0.75rem;
+}
+
+.logbookTitle {
+  margin: 0 0 0.25rem;
+
+  color: var(--color-navy);
+
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.textarea {
+  width: 100%;
+
+  padding: 0.5rem 0.75rem;
+
+  color: var(--color-body);
+  background-color: var(--color-canvas);
+  border: 1px solid var(--color-divider);
+  border-radius: 0.5rem;
+
+  font-family: inherit;
+  font-size: 0.875rem;
+  line-height: 1.5;
+
+  resize: none;
+  outline: none;
+
+  transition: border-color 0.2s ease;
+}
+
+.textarea:focus {
+  border-color: var(--color-ocean);
+}
+
+.textarea::placeholder {
+  color: var(--color-control);
+}
+
+.charCount {
+  margin: 0.25rem 0 0;
+
+  color: var(--color-control);
+
+  font-size: 0.75rem;
+  text-align: right;
+}
+
+.formActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.cancelButton,
+.saveButton {
+  padding: 0.5rem;
+
+  border-radius: 0.5rem;
+
+  font-family: inherit;
+  font-size: 0.75rem;
+
+  cursor: pointer;
+
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.cancelButton {
+  flex: 1;
+
+  color: var(--color-secondary);
+  background-color: transparent;
+  border: 1px solid var(--color-divider);
+
+  font-weight: 500;
+}
+
+.cancelButton:hover {
+  border-color: var(--color-navy);
+}
+
+.saveButton {
+  flex: 2;
+
+  color: var(--color-canvas);
+  background-color: var(--color-action);
+  border: 1px solid var(--color-action);
+
+  font-weight: 700;
+}
+
+.saveButton:hover {
+  background-color: var(--color-action-hover);
+  border-color: var(--color-action-hover);
+}
+
+.openLogbookButton,
+.reviewButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+
+  width: 100%;
+  padding: 0.5rem;
+
+  background: none;
+  border: 0;
+
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition: color 0.2s ease;
+}
+
+.openLogbookButton {
+  color: var(--color-action);
+}
+
+.openLogbookButton:hover {
+  color: var(--color-action-hover);
+}
+
+.reviewButton {
+  margin-top: 1rem;
+  padding-top: 1rem;
+
+  color: var(--color-ocean);
+  border-top: 1px solid var(--color-surface);
+
+  text-decoration: none;
+}
+
+.reviewButton:hover {
+  color: var(--color-navy);
+}
+
+/* Empty */
+
+.empty {
+  padding: 5rem 0;
+
+  color: var(--color-secondary);
+
+  text-align: center;
+}
+
+.emptyIcon {
+  margin-bottom: 0.75rem;
+
+  font-size: 2.25rem;
+}
+
+.emptyText {
+  margin: 0;
+
+  font-weight: 500;
+}
