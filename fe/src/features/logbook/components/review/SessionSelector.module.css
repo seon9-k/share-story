@@ -1,0 +1,75 @@
+.card {
+  padding: 1rem;
+
+  background-color: var(--color-canvas);
+  border-radius: 1rem;
+}
+
+.label {
+  margin: 0 0 0.75rem;
+
+  color: var(--color-control);
+
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.sessionList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.sessionButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  padding: 0.5rem 0.75rem;
+
+  color: var(--color-secondary);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-divider);
+  border-radius: 0.75rem;
+
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 500;
+
+  cursor: pointer;
+
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.sessionButton:hover {
+  border-color: var(--color-navy);
+}
+
+.selected {
+  color: var(--color-canvas);
+  background-color: var(--color-navy);
+  border-color: var(--color-navy);
+}
+
+.selected:hover {
+  border-color: var(--color-navy);
+}
+
+.date {
+  font-size: 0.65rem;
+
+  opacity: 0.7;
+}
+
+.topic {
+  margin: 0.5rem 0 0;
+
+  color: var(--color-control);
+
+  font-size: 0.75rem;
+}

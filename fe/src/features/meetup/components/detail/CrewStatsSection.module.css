@@ -1,0 +1,75 @@
+.card {
+  padding: 1.5rem;
+
+  background-color: var(--color-canvas);
+  border-radius: 1rem;
+}
+
+.title {
+  margin: 0 0 1rem;
+
+  color: var(--color-navy);
+
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.statCard {
+  padding: 1rem;
+
+  background-color: var(--color-surface);
+  border-radius: 0.75rem;
+}
+
+.statTitle {
+  margin: 0 0 0.25rem;
+
+  color: var(--color-navy);
+
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.total {
+  margin: 0 0 0.5rem;
+
+  color: var(--color-control);
+
+  font-size: 0.75rem;
+}
+
+.statList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.statRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+
+  color: var(--color-secondary);
+
+  font-size: 0.75rem;
+}
+
+.count {
+  flex-shrink: 0;
+
+  color: var(--color-navy);
+
+  font-weight: 500;
+}
+
+@media (max-width: 640px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,44 @@
+.card {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+
+  padding: 1.5rem;
+
+  background-color: var(--color-subtle);
+  border-radius: 1rem;
+}
+
+.icon {
+  flex-shrink: 0;
+
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.title {
+  margin: 0 0 0.25rem;
+
+  color: var(--color-navy);
+
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.requirements {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+
+  color: var(--color-secondary);
+
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 480px) {
+  .requirements {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+}

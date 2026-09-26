@@ -1,0 +1,276 @@
+.layout {
+  display: grid;
+  gap: 1rem;
+}
+
+/* Crew list */
+
+.crewPanel {
+  overflow: hidden;
+
+  background-color: var(--color-canvas);
+  border-radius: 1rem;
+}
+
+.panelHeader {
+  padding: 0.75rem 1rem;
+
+  border-bottom: 1px solid var(--color-surface);
+}
+
+.panelTitle {
+  margin: 0;
+
+  color: var(--color-navy);
+
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.crewItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+
+  width: 100%;
+  padding: 0.875rem 1rem;
+
+  color: inherit;
+  background-color: var(--color-canvas);
+  border: 0;
+  border-bottom: 1px solid var(--color-surface);
+
+  font-family: inherit;
+  text-align: left;
+
+  cursor: pointer;
+
+  transition: background-color 0.2s ease;
+}
+
+.crewItem:last-child {
+  border-bottom: 0;
+}
+
+.crewItem:hover {
+  background-color: rgb(247 249 250 / 50%);
+}
+
+.selectedCrewItem {
+  background-color: var(--color-surface);
+}
+
+.selectedCrewItem:hover {
+  background-color: var(--color-surface);
+}
+
+.disabledCrewItem {
+  opacity: 0.5;
+
+  cursor: not-allowed;
+}
+
+.disabledCrewItem:hover {
+  background-color: var(--color-canvas);
+}
+
+.avatar {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+
+  width: 2rem;
+  height: 2rem;
+
+  color: var(--color-navy);
+  background-color: rgb(23 50 77 / 10%);
+  border-radius: 50%;
+
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.crewInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.crewName {
+  margin: 0;
+
+  color: var(--color-navy);
+
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.charCount {
+  margin: 0.125rem 0 0;
+
+  color: var(--color-control);
+
+  font-size: 0.75rem;
+}
+
+/* Status */
+
+.status {
+  flex-shrink: 0;
+
+  padding: 0.125rem 0.5rem;
+
+  border-radius: 9999px;
+
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.pending {
+  color: var(--color-action);
+  background-color: var(--color-subtle);
+}
+
+.approved {
+  color: var(--color-ocean);
+  background-color: #e8f4f9;
+}
+
+.notSubmitted {
+  color: var(--color-control);
+  background-color: var(--color-surface);
+}
+
+/* Report */
+
+.reportPanel {
+  display: flex;
+  flex-direction: column;
+
+  min-height: 20rem;
+
+  overflow: hidden;
+
+  background-color: var(--color-canvas);
+  border-radius: 1rem;
+}
+
+.reportHeader {
+  padding: 1rem 1.25rem;
+
+  border-bottom: 1px solid var(--color-surface);
+}
+
+.reportTitle {
+  margin: 0;
+
+  color: var(--color-navy);
+
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.reportMeta {
+  margin: 0.125rem 0 0;
+
+  color: var(--color-control);
+
+  font-size: 0.75rem;
+}
+
+.reportContent {
+  flex: 1;
+
+  padding: 1rem 1.25rem;
+}
+
+.reportText {
+  margin: 0;
+
+  color: var(--color-body);
+
+  font-size: 0.875rem;
+  line-height: 1.625;
+}
+
+.readOnlyNotice {
+  margin: 0.75rem 0 0;
+
+  color: var(--color-control);
+
+  font-size: 0.75rem;
+}
+
+.reportActions {
+  padding: 1rem 1.25rem;
+
+  border-top: 1px solid var(--color-surface);
+}
+
+.approveButton {
+  width: 100%;
+  padding: 0.625rem;
+
+  color: var(--color-canvas);
+  background-color: var(--color-action);
+  border: 0;
+  border-radius: 0.75rem;
+
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition: background-color 0.2s ease;
+}
+
+.approveButton:hover {
+  background-color: var(--color-action-hover);
+}
+
+.approveButton:active {
+  background-color: var(--color-action-pressed);
+}
+
+.approvedMessage {
+  color: var(--color-ocean);
+
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-align: center;
+}
+
+/* Empty */
+
+.emptyReport {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+
+  padding: 3rem 1rem;
+
+  color: var(--color-control);
+
+  text-align: center;
+}
+
+.emptyIcon {
+  margin-bottom: 0.5rem;
+
+  font-size: 1.875rem;
+}
+
+.emptyText {
+  margin: 0;
+
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+@media (min-width: 768px) {
+  .layout {
+    grid-template-columns: 2fr 3fr;
+  }
+}
