@@ -2,13 +2,13 @@
   "name": "share-story-be",
   "version": "1.0.0",
   "description": "쉐어 스토리 백엔드",
-  "main": "dist/app.js",
+  "main": "src/app.js",
   "engines": {
     "node": ">=22.0.0"
   },
   "scripts": {
-    "start": "node src/app.js",
-    "dev": "nodemon src/app.js",
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
     "seed": "node database/seeders/seed.js",
     "db:check": "node scripts/db-check.js"
   },
