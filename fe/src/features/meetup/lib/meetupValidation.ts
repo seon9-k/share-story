@@ -10,7 +10,7 @@ export function validateMeetup(form: MeetupForm, sessions: MeetupSession[]): str
       form.bookTitle,
       form.meetupTitle,
       form.intro,
-      form.location,
+      form.zoomUrl,
       form.deadline,
       form.minMembers,
       form.maxMembers,

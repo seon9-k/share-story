@@ -63,6 +63,7 @@ export function mapMeetupListApiItem(item: MeetupListApiItem): MeetupListItem {
     schedule: toScheduleText(item.sch_day),
     time: item.sch_time || '시간 미정',
     firstDate: toMonthDay(item.sch_st_date),
+    lastDate: toMonthDay(item.sch_ed_date),
     status: toKoreanMeetupStatus(item.status),
     image: item.book_image_url || DEFAULT_MEETUP_IMAGE,
   };
@@ -70,7 +71,9 @@ export function mapMeetupListApiItem(item: MeetupListApiItem): MeetupListItem {
 
 export function mapMeetupDetailToListItem(detail: MeetupDetailApiResponse): MeetupListItem {
   const { meetup, sessions } = detail;
-  const firstSession = sessions[0];
+  const orderedSessions = sessions.slice().sort((left, right) => left.session_number - right.session_number);
+  const firstSession = orderedSessions[0];
+  const lastSession = orderedSessions[orderedSessions.length - 1];
   return {
     id: meetup.meetup_id,
     title: meetup.title,
@@ -81,6 +84,7 @@ export function mapMeetupDetailToListItem(detail: MeetupDetailApiResponse): Meet
     schedule: toScheduleText(firstSession?.sch_day),
     time: firstSession?.sch_time || '시간 미정',
     firstDate: toMonthDay(firstSession?.sch_date),
+    lastDate: toMonthDay(lastSession?.sch_date),
     status: toKoreanMeetupStatus(meetup.status),
     image: meetup.book_image_url || DEFAULT_MEETUP_IMAGE,
   };
@@ -158,13 +162,16 @@ export function toCreateMeetupRequest(
   leaderId: string,
   userId: string,
 ): CreateMeetupPayload {
+  const zoomUrl = form.zoomUrl.trim() || null;
+  const zoomPassword = form.zoomPassword.trim() || null;
+
   return {
     leader_id: leaderId,
     user_id: userId,
     title: form.meetupTitle,
     description: form.intro,
     book_title: form.bookTitle,
-    book_image_url: null,
+    book_image_url: form.bookImageUrl.trim() || null,
     min_capacity: Number(form.minMembers),
     max_capacity: Number(form.maxMembers),
     deadline: `${form.deadline}T23:59:59`,
@@ -177,6 +184,8 @@ export function toCreateMeetupRequest(
       sch_time: session.time,
       sch_st_time: session.time,
       sch_ed_time: session.endTime || addHoursToTime(session.time, 2),
+      zoom_url: zoomUrl,
+      zoom_password: zoomPassword,
     })),
   };
 }

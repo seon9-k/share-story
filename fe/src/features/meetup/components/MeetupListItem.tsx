@@ -28,8 +28,10 @@ function MeetupListItem({ meetup }: MeetupListItemProps) {
           인원 {meetup.minMembers}~{meetup.maxMembers}명
         </p>
 
+        <p className={styles.book}>도서: {meetup.book}</p>
+
         <p className={styles.schedule}>
-          {meetup.schedule} · {meetup.time} · 첫 항해 {meetup.firstDate}
+          {meetup.schedule} · {meetup.time} · {meetup.firstDate}~{meetup.lastDate}
         </p>
       </div>
 

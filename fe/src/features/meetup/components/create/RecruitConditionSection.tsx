@@ -8,13 +8,20 @@ export default function RecruitConditionSection({
   onChange: (field: keyof MeetupForm, value: string) => void;
 }) {
   return (
-    <FormSection number={2} title="장소 · 모집 조건">
-      <Field label="장소" required>
+    <FormSection number={2} title="Zoom · 모집 조건">
+      <Field label="Zoom URL" required>
         <TextInput
-          name="location"
+          name="zoomUrl"
           required
-          value={form.location}
-          onChange={(e) => onChange('location', e.target.value)}
+          value={form.zoomUrl}
+          onChange={(e) => onChange('zoomUrl', e.target.value)}
+        />
+      </Field>
+      <Field label="Zoom 비밀번호">
+        <TextInput
+          name="zoomPassword"
+          value={form.zoomPassword}
+          onChange={(e) => onChange('zoomPassword', e.target.value)}
         />
       </Field>
       <Field label="최소 인원" required>

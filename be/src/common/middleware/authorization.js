@@ -4,6 +4,11 @@ const SECRET = process.env.JWT_SECRET;
 const auth = (req, res, next) => {
     const header = req.headers.authorization;
     if(!header || !header.startsWith('Bearer ')){
+        // 로그인 기능 완성 전까지는 development에서 body.user_id로 대체 허용한다.
+        if (process.env.NODE_ENV === 'development' && req.body?.user_id) {
+            req.user_id = req.body.user_id;
+            return next();
+        }
         return res.status(401).json({success:false, message : '다시 로그인해주세요. 헤더에 인증정보가 없습니다.'});
     }
    

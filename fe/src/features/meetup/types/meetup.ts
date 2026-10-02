@@ -9,6 +9,7 @@ export interface Meetup {
   maxMembers: number;
   status: MeetupStatus;
   nextMeeting: string;
+  dateRange: string;
   location: string;
   image: string;
 }

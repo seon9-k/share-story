@@ -75,6 +75,14 @@
   font-size: 0.875rem;
 }
 
+.book {
+  margin: 0 0 0.375rem;
+
+  color: var(--color-secondary);
+
+  font-size: 0.8125rem;
+}
+
 .schedule {
   margin: 0;
 

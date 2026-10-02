@@ -1,8 +1,10 @@
 export interface MeetupForm {
   bookTitle: string;
+  bookImageUrl: string;
   meetupTitle: string;
   intro: string;
-  location: string;
+  zoomUrl: string;
+  zoomPassword: string;
   minMembers: string;
   maxMembers: string;
   deadline: string;
@@ -37,5 +39,7 @@ export interface CreateMeetupPayload {
     sch_time: string;
     sch_st_time: string;
     sch_ed_time: string;
+    zoom_url: string | null;
+    zoom_password: string | null;
   }>;
 }

@@ -175,7 +175,7 @@ function MeetupEditForm({ meetup }: { meetup: MeetupDetail }) {
           <Field label="참여 금액">
             <TextInput type="number" name="price" min={0} defaultValue={meetup.price ?? ''} />
           </Field>
-          <Field label="Zoom ID">
+          <Field label="Zoom URL">
             <TextInput
               name="zoomUrl"
               defaultValue={meetup.sessions[0]?.zoomUrl ?? ''}

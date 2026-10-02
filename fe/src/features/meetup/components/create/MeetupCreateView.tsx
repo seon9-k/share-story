@@ -19,9 +19,11 @@ const REQUIRED_SESSION_COUNT = 4;
 
 const INITIAL_FORM: MeetupForm = {
   bookTitle: '',
+  bookImageUrl: '',
   meetupTitle: '',
   intro: '',
-  location: '',
+  zoomUrl: '',
+  zoomPassword: '',
   minMembers: '4',
   maxMembers: '8',
   deadline: '',
@@ -139,8 +141,6 @@ function MeetupCreateView() {
     <div className={styles.page}>
       <header className={styles.pageHeader}>
         <div className={styles.headerInner}>
-          <input type="hidden" id="leader_id" value="test_user_1"/>
-          <input type="hidden" id="user_id" value="test_user_1"/>
           <button type="button" className={styles.backButton} onClick={handleCancel}>
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M15 19l-7-7 7-7" strokeLinecap="round" strokeLinejoin="round" />

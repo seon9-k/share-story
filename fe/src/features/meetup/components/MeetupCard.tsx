@@ -48,7 +48,7 @@ function MeetupCard({ meetup }: MeetupCardProps) {
         <div className={styles.footer}>
           <div className={styles.schedule}>
             <div>🕐 {meetup.nextMeeting}</div>
-            <div>📍 {meetup.location}</div>
+            <div>�️ {meetup.dateRange}</div>
           </div>
 
           <span className={`${styles.detailBadge} ${isCompleted ? styles.completedBadge : ''}`}>
