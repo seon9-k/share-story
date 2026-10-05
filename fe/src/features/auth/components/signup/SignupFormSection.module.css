@@ -211,6 +211,13 @@
   border-color: var(--color-navy);
 }
 
+/* 장르 최대 개수 도달 시 미선택 버튼 비활성 */
+.optionButton:disabled {
+  border-color: var(--color-divider);
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 /* Gender */
 
 .equalOptionButton {

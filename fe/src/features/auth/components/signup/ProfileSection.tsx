@@ -1,5 +1,5 @@
-import { FormSection, TextInput } from '../../../../shared/ui';
-import type { Gender } from '../../types/signup';
+import { FormSection, Select } from '../../../../shared/ui';
+import { AGE_GROUP_OPTIONS, GENDER_OPTIONS, type Gender } from '../../types/signup';
 
 import styles from './SignupFormSection.module.css';
 
@@ -11,8 +11,6 @@ interface ProfileSectionProps {
   onAgeGroupChange: (value: string) => void;
 }
 
-const GENDERS: Gender[] = ['남', '여'];
-
 function ProfileSection({
   gender,
   age_group,
@@ -20,39 +18,45 @@ function ProfileSection({
   onAgeGroupChange,
 }: ProfileSectionProps) {
   return (
-    <FormSection number={5} title="성별 / 생년월일">
+    <FormSection number={5} title="성별 / 연령대">
       <div className={styles.fieldGroup}>
         <div className={styles.row}>
-          {GENDERS.map((genderOption) => {
-            const isSelected = gender === genderOption;
+          {/* 화면엔 '남'/'여', 상태엔 'M'/'F' 저장 → BE ENUM과 일치 */}
+          {GENDER_OPTIONS.map(({ value, label }) => {
+            const isSelected = gender === value;
 
             return (
               <button
-                key={genderOption}
+                key={value}
                 type="button"
                 className={`${styles.equalOptionButton} ${
                   isSelected ? styles.equalOptionButtonSelected : ''
                 }`}
-                onClick={() => onGenderChange(genderOption)}
+                onClick={() => onGenderChange(value)}
                 aria-pressed={isSelected}
               >
-                {genderOption}
+                {label}
               </button>
             );
           })}
         </div>
 
-        <TextInput
+        {/* 생년월일(YYYY.MM.DD) 자유 입력 → 연령대 선택으로 변경 (DB age_group 값과 일치) */}
+        <Select
           id="age_group"
-          aria-label="생년월일"
           name="age_group"
-          type="text"
+          aria-label="연령대"
           value={age_group}
           onChange={(event) => onAgeGroupChange(event.target.value)}
-          placeholder="YYYY.MM.DD"
-          className={styles.input}
-          autoComplete="bday"
-        />
+          className={styles.select}
+        >
+          <option value="">연령대 선택</option>
+          {AGE_GROUP_OPTIONS.map((age) => (
+            <option key={age} value={age}>
+              {age}
+            </option>
+          ))}
+        </Select>
       </div>
     </FormSection>
   );
