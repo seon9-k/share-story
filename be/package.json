@@ -2,7 +2,7 @@
   "name": "share-story-be",
   "version": "1.0.0",
   "description": "쉐어 스토리 백엔드",
-  "main": "src/app.js",
+  "main": "src/server.js",
   "engines": {
     "node": ">=22.0.0"
   },
