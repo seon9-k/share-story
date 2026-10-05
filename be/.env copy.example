@@ -11,7 +11,10 @@ DB_PASSWORD=0000
 
 # Auth
 JWT_SECRET=change-me
-SALT_ROUND=10
+# 토큰 만료 (기본 1d = 하루)
+JWT_EXPIRES_IN=1d
+# 키 이름 SALT_ROUND → SALT_ROUNDS (auth.service.js와 일치)
+SALT_ROUNDS=10
 
 # Mail (SMTP)
 SMTP_HOST=smtp.example.com

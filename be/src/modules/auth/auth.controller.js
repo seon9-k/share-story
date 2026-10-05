@@ -1,4 +1,5 @@
 const authService = require('./auth.service');
+const { validateSignup, validateUpdate, rules, MESSAGES, isText } = require('./auth.validation');
 
 /**
  * [Controller]
@@ -7,181 +8,76 @@ const authService = require('./auth.service');
  * - Service의 처리 결과를 HTTP 응답으로 반환합니다.
  * - 비즈니스 로직은 Service에서 처리합니다.
  */
-const getAuth = async (req, res, next) => {
+
+// Service의 status 에러는 그대로 응답, 나머지는 errorHandler로 전달
+const handle = (handler) => async (req, res, next) => {
   try {
-    const { user_id } = req.params;
-
-    const user = await authService.getAuthById(user_id);
-
-    return res.status(200).json({
-      success: true,
-      data: user,
-    });
+    return await handler(req, res);
   } catch (error) {
-    next(error);
-  }
-};
-
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const secret = process.env.JWT_SECRET;
-const { User } = require('../../models/index');
-
-//password hash
-const createHash = async (password) => {
-  const saltRounds = parseInt(process.env.SALT_ROUND, 10) || 10;
-  const hashed = await bcrypt.hash(password, saltRounds);
-  return hashed;
-};
-
-//회원가입
-const signUp = async (req, res, next) => {
-  try {
-    const {
-      name,
-      password,
-      user_id,
-      gender,
-      age_group,
-      readingAmount,
-      genres,
-      social_provider,
-      social_id,
-      updated_user_id,
-      email,
-      created_user_id,
-    } = req.body;
-
-    // 유효성 검사
-    if (!user_id || !password || !name) {
-      return res.status(400).json({ success: false, message: '필수 항목이 누락되었습니다.' });
-    }
-
-    //중복체크
-    const user = await User.findOne({ where: { user_id: user_id } });
-    console.log('POST /auth/signup ', user);
-    if (user) {
+    if (error.status)
+      return res.status(error.status).json({ success: false, message: error.message });
+    // 동시 가입으로 PK/유니크 충돌 시
+    if (error.name === 'SequelizeUniqueConstraintError') {
       return res
         .status(409)
-        .json({ success: false, message: `이미 가입이 되어있습니다. ${user_id}` });
+        .json({ success: false, message: '이미 사용 중인 아이디 또는 이메일입니다.' });
     }
-    // 비밀번호 해시화
-    const newPassword = await createHash(password);
-
-    // DB 생성
-    const result = await User.create({
-      name,
-      password: newPassword,
-      user_id,
-      gender,
-      age_group,
-      monthly_reading_volume: readingAmount,
-      genre_1: genres[0],
-      genre_2: genres[1],
-      social_provider,
-      social_id,
-      updated_user_id: user_id,
-      email,
-      created_user_id: user_id,
-    });
-
-    // 응답 전달
-    res.status(201).json({
-      success: true,
-      document: { name: result.name, user_id: result.user_id },
-      message: '회원가입에 완료되었습니다.',
-    });
-  } catch (error) {
-    console.error('회원가입 처리 중 에러 발생:', error);
-    next(error);
+    return next(error);
   }
 };
 
-//로그인
-const login = async (req, res, next) => {
-  try {
-    const { password, user_id } = req.body;
-    console.log(`be login controller user_id ===> ${user_id}`);
-    const user = await User.findOne({ where: { user_id: user_id } });
+const badRequest = (res, message) => res.status(400).json({ success: false, message });
 
-    //이메일체크, 비밀번호 확인
-    if (!user || !(await bcrypt.compare(password, user.password))) {
-      return res.status(400).json({ success: false, message: `회원정보가 잘못되었습니다.` });
-    }
+// 회원가입
+// 기존 console.log(user) 제거 (조회한 회원 정보가 로그에 남았음)
+const signUp = handle(async (req, res) => {
+  const body = req.body ?? {};
+  const error = validateSignup(body);
+  if (error) return badRequest(res, error);
 
-    const option = { expiresIn: 'user_id' };
-    //토큰생성, payload는 {user_id }
-    const token = jwt.sign({ user_id }, secret);
-    //console.log(`token ===> ${token}`);
-    console.log(`be login controller token ===> ${token}`);
-    return res
-      .status(200)
-      .json({ success: true, token: token, message: '로그인에 완료되었습니다.', document: user });
-  } catch (error) {
-    console.log(`error ===> ${error}`);
-    next(error, req, res);
+  const document = await authService.signUp(body);
+  return res.status(201).json({ success: true, document, message: '회원가입이 완료되었습니다.' });
+});
+
+// 로그인
+// 기존 토큰 console.log 제거, 실패 응답 400 → 401
+const login = handle(async (req, res) => {
+  const { user_id, password } = req.body ?? {};
+  if (!isText(user_id) || typeof password !== 'string' || !password) {
+    return badRequest(res, '아이디와 비밀번호를 입력해 주세요.');
   }
-};
 
-//아이디 중복확인
-const getMyInfo = async (req, res, next) => {
-  try {
-    const { user_id } = req.body;
-    console.log(`getMyInfo user_id: ${user_id}`);
-    const count = await User.count({ where: { user_id: user_id } });
-    console.log(`getMyInfo count: ${count}`);
+  const { token, user } = await authService.login({ user_id, password });
+  return res
+    .status(200)
+    .json({ success: true, token, document: user, message: '로그인되었습니다.' });
+});
 
-    return res
-      .status(200)
-      .json({
-        message: count === 0 ? '사용 가능한 아이디입니다.' : '이미 사용 중인 아이디입니다.',
-        count,
-      });
-  } catch (error) {
-    console.log(`error ===> ${error}`);
-    next(error, req, res);
-  }
-};
+// 아이디 중복확인
+// 기존 이름 getMyInfo는 "내 정보 조회"로 오해 → checkUserId로 변경
+const checkUserId = handle(async (req, res) => {
+  const { user_id } = req.body ?? {};
+  // 형식이 틀린 아이디는 조회하지 않음
+  if (!rules.user_id(user_id)) return badRequest(res, MESSAGES.user_id);
 
-//회원정보 수정
-const updateMyInfo = async (req, res, next) => {
-  try {
-    const {
-      password,
-      user_id,
-      email,
-      name,
-      gender,
-      age_group,
-      monthly_reading_volume,
-      genre_1,
-      genre_2,
-    } = req.body;
-    const user = await User.update(
-      {
-        email: email,
-        name: name,
-        gender: gender,
-        age_group: age_group,
-        monthly_reading_volume: monthly_reading_volume,
-        genre_1: genre_1,
-        genre_2: genre_2,
-      },
-      { where: { user_id: user_id } },
-    );
+  const count = (await authService.isUserIdTaken(user_id)) ? 1 : 0;
+  return res.status(200).json({
+    success: true,
+    count,
+    message: count === 0 ? '사용 가능한 아이디입니다.' : '이미 사용 중인 아이디입니다.',
+  });
+});
 
-    //이메일체크, 비밀번호 확인
-    if (!user || !(await bcrypt.compare(password, user.password))) {
-      return res.status(400).json({ success: false, message: `회원정보가 잘못되었습니다.` });
-    }
+// 회원정보 수정 (authorization 미들웨어 필수)
+// body.user_id는 무시하고 토큰의 req.user_id만 사용
+const updateMyInfo = handle(async (req, res) => {
+  const body = req.body ?? {};
+  const error = validateUpdate(body);
+  if (error) return badRequest(res, error);
 
-    return res
-      .status(200)
-      .json({ success: true, token: token, message: '로그인에 완료되었습니다.' });
-  } catch (error) {
-    console.log(`error ===> ${error}`);
-    next(error, req, res);
-  }
-};
+  const document = await authService.updateMyInfo(req.user_id, body);
+  return res.status(200).json({ success: true, document, message: '회원정보가 수정되었습니다.' });
+});
 
-module.exports = { getAuth, signUp, login, getMyInfo, updateMyInfo };
+// 기존 getAuth는 라우트에 연결되지 않았고 /member/me와 중복이라 삭제
+module.exports = { signUp, login, checkUserId, updateMyInfo };

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import {
   Field,
@@ -11,31 +11,45 @@ import {
   Notice,
 } from '../../../../shared/ui';
 
+// RequireAuth가 넘기는 from, 회원가입 완료 후 넘기는 signedUpId
+interface LoginLocationState {
+  from?: string;
+  signedUpId?: string;
+}
+
 export default function LoginView() {
   const [message, setMessage] = useState('');
-  const { login } = useAuth();
+  const [error, setError] = useState('');
+  const { user, login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const from = (location.state as { from?: string } | null)?.from ?? '/';
-  const [user_id, setUserId] = useState('');
+  const state = location.state as LoginLocationState | null;
+  const from = state?.from ?? '/';
+  // 가입 직후면 아이디 미리 채움
+  const [user_id, setUserId] = useState(state?.signedUpId ?? '');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  async function hanldeSubmit(e: React.SubmitEvent) {
+  // 오타 수정: hanldeSubmit → handleSubmit
+  async function handleSubmit(e: React.SubmitEvent) {
     e.preventDefault();
+    if (submitting) return;
     setSubmitting(true);
+    setError('');
 
     try {
-      console.log(`${user_id}`);
       await login(user_id, password);
       navigate(from, { replace: true });
     } catch (e) {
-      console.error(e);
-      alert(`${e instanceof Error ? e.message : '로그인에 실패했습니다.'}`);
+      // alert 대신 화면에 표시, BE 메시지(아이디 또는 비밀번호 불일치 등) 사용
+      setError(e instanceof Error ? e.message : '로그인에 실패했습니다.');
     } finally {
       setSubmitting(false);
     }
   }
+
+  // 이미 로그인 상태면 원래 가려던 곳으로 이동
+  if (user) return <Navigate to={from} replace />;
 
   return (
     <PageContainer narrow>
@@ -45,13 +59,16 @@ export default function LoginView() {
         description="로그인하고 이어서 항해해요."
       />
 
-      <form onSubmit={hanldeSubmit}>
+      {state?.signedUpId && <Notice>회원가입이 완료되었습니다. 로그인해 주세요.</Notice>}
+
+      <form onSubmit={handleSubmit}>
         <FormSection title="로그인">
           <Field label="아이디" required>
             <TextInput
               type="text"
               name="user_id"
-              autoComplete="user_id"
+              // 'user_id'는 유효한 autocomplete 값이 아님 → username
+              autoComplete="username"
               required
               onChange={(e) => setUserId(e.target.value)}
               placeholder="아이디를 입력해 주세요"
@@ -81,6 +98,7 @@ export default function LoginView() {
           </Button>
         </FormSection>
 
+        {error && <Notice>{error}</Notice>}
         {message && <Notice>{message}</Notice>}
       </form>
 

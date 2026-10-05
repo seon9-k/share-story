@@ -40,7 +40,8 @@ paths:
       operationId: signup
       summary: 회원가입
       description: readingAmount를 monthly_reading_volume에, genres의 첫 두 항목을 genre_1/genre_2에
-        저장합니다. 감사용 사용자 ID는 가입 user_id로 설정합니다.
+        저장합니다. 감사용 사용자 ID는 가입 user_id로 설정합니다. 모든 필드를 BE에서 검증하며(400),
+        아이디(탈퇴 회원 포함)·이메일 중복 시 409를 반환합니다.
       security: []
       responses:
         '201':
@@ -82,7 +83,7 @@ paths:
             schema:
               '$ref': '#/components/schemas/SignupRequest'
             example:
-              user_id: reader_01
+              user_id: reader01
               password: Example1234!
               name: 독서회원
               email: reader@example.com
@@ -99,8 +100,8 @@ paths:
       operationId: login
       summary: 로그인
       description:
-        반환된 token을 Authorize에 입력합니다. 현재 JWT 만료 옵션은 적용되지 않습니다. document에
-        User 모델 전체(비밀번호 해시 포함)가 반환되는 현 구현을 반영했습니다.
+        반환된 token을 Authorize에 입력합니다. JWT 만료는 하루(JWT_EXPIRES_IN, 기본 1d)입니다.
+        document에는 비밀번호 해시를 제외한 회원 정보만 반환합니다. 아이디·비밀번호 불일치는 401입니다.
       security: []
       responses:
         '200':
@@ -127,6 +128,8 @@ paths:
                   - document
         '400':
           '$ref': '#/components/responses/Error400'
+        '401':
+          '$ref': '#/components/responses/Error401'
         '500':
           '$ref': '#/components/responses/Error500'
         '504':
@@ -140,17 +143,19 @@ paths:
             example:
               user_id: reader_01
               password: Example1234!
-  '/auth/getMyInfo':
+  '/auth/check-id':
     post:
       tags:
         - Auth
       operationId: checkUserId
       summary: 아이디 중복 확인
       description:
-        이름과 달리 내 정보 조회가 아니라 아이디 중복 확인입니다. success/document 래퍼 없이 count와
-        message를 반환합니다.
+        아이디 중복 확인입니다(기존 경로 /auth/getMyInfo에서 변경). document 래퍼 없이 count와
+        message를 반환합니다. 탈퇴 회원 아이디도 사용 중으로 셉니다. 형식이 틀린 아이디는 400입니다.
       security: []
       responses:
+        '400':
+          '$ref': '#/components/responses/Error400'
         '200':
           description: 성공
           content:
@@ -158,6 +163,8 @@ paths:
               schema:
                 type: object
                 properties:
+                  success:
+                    type: boolean
                   message:
                     type: string
                   count:
@@ -177,34 +184,60 @@ paths:
             schema:
               '$ref': '#/components/schemas/CheckUserIdRequest'
             example:
-              user_id: reader_01
+              user_id: reader01
   '/auth/updateMyInfo':
     patch:
       tags:
         - Auth
       operationId: updateMyInfo
-      summary: 회원정보 수정 (현재 구현 오류)
+      summary: 회원정보 수정 (본인)
       description:
-        현재 인증이 없고 body.user_id 대상 정보를 먼저 수정합니다. 이후 User.update 반환 배열에서
-        password를 읽어 bcrypt.compare를 호출하므로 정상 성공을 보장하지 못하며, 성공 분기에도 미정의 token을 참조합니다.
-        500이어도 DB 변경이 반영될 수 있습니다. 정상 200 응답 계약은 문서화하지 않습니다.
-      security: []
+        토큰의 사용자 정보만 수정합니다(body.user_id는 무시). 보낸 필드만 검증 후 수정합니다.
+        비밀번호 변경 시 new_password와 current_password가 모두 필요하며, 현재 비밀번호가 틀리면 400입니다.
+      security:
+        - bearerAuth: []
       responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                      - true
+                  document:
+                    '$ref': '#/components/schemas/LoginUser'
+                  message:
+                    type: string
+                required:
+                  - success
+                  - document
+                  - message
         '400':
           '$ref': '#/components/responses/Error400'
+        '401':
+          '$ref': '#/components/responses/Error401'
+        '404':
+          '$ref': '#/components/responses/Error404'
         '409':
           '$ref': '#/components/responses/Error409'
         '500':
           '$ref': '#/components/responses/Error500'
         '504':
           '$ref': '#/components/responses/Error504'
-      deprecated: true
       requestBody:
         required: true
         content:
           application/json:
             schema:
               '$ref': '#/components/schemas/UpdateMyInfoRequest'
+            example:
+              name: 새닉네임
+              genres:
+                - NOVEL
   '/meetup':
     post:
       tags:
@@ -2017,18 +2050,6 @@ components:
         email:
           type: string
           maxLength: 100
-        password:
-          type: string
-          nullable: true
-          description: 현재 로그인 응답은 User 모델을 그대로 반환하여 해시된 비밀번호도 포함합니다.
-        social_provider:
-          type: string
-          nullable: true
-          maxLength: 20
-        social_id:
-          type: string
-          nullable: true
-          maxLength: 100
         genre_1:
           '$ref': '#/components/schemas/Genre'
         genre_2:
@@ -2043,34 +2064,19 @@ components:
           enum:
             - M
             - F
-        created_user_id:
-          type: string
-        updated_user_id:
-          type: string
-        deleted_user_id:
-          type: string
-          nullable: true
-        created_at:
-          type: string
-          format: date-time
-        updated_at:
-          type: string
-          format: date-time
-        deleted_at:
-          type: string
-          format: date-time
-          nullable: true
     SignupRequest:
       type: object
       properties:
         user_id:
           type: string
-          maxLength: 100
+          pattern: '^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{4,10}$'
+          description: 영문과 숫자를 포함한 4~10자
         name:
           type: string
           maxLength: 50
         email:
           type: string
+          format: email
           maxLength: 100
         gender:
           type: string
@@ -2079,18 +2085,18 @@ components:
             - F
         age_group:
           type: string
-          maxLength: 100
-        social_provider:
-          type: string
-          nullable: true
-          maxLength: 20
-        social_id:
-          type: string
-          nullable: true
-          maxLength: 100
+          enum:
+            - 10대
+            - 20대
+            - 30대
+            - 40대
+            - 50대
+            - 60대 이상
         password:
           type: string
-          minLength: 1
+          minLength: 8
+          maxLength: 64
+          description: 영문과 숫자를 포함한 8자 이상
         readingAmount:
           '$ref': '#/components/schemas/ReadingAmount'
         genres:
@@ -2098,6 +2104,7 @@ components:
           items:
             '$ref': '#/components/schemas/Genre'
           maxItems: 2
+          uniqueItems: true
           description: 배열은 필수입니다. 첫 두 항목을 genre_1/genre_2에 저장하며 빈 배열도 허용합니다.
       required:
         - user_id
@@ -2120,12 +2127,11 @@ components:
         - password
     UpdateMyInfoRequest:
       type: object
+      description: 보낸 필드만 수정합니다. 최소 1개 필드가 필요합니다.
       properties:
-        user_id:
-          type: string
-          maxLength: 100
         email:
           type: string
+          format: email
           maxLength: 100
         name:
           type: string
@@ -2137,19 +2143,28 @@ components:
             - F
         age_group:
           type: string
-          maxLength: 100
-        monthly_reading_volume:
+          enum:
+            - 10대
+            - 20대
+            - 30대
+            - 40대
+            - 50대
+            - 60대 이상
+        readingAmount:
           '$ref': '#/components/schemas/ReadingAmount'
-        genre_1:
-          '$ref': '#/components/schemas/Genre'
-        genre_2:
-          '$ref': '#/components/schemas/Genre'
-        password:
+        genres:
+          type: array
+          items:
+            '$ref': '#/components/schemas/Genre'
+          maxItems: 2
+          uniqueItems: true
+        new_password:
           type: string
-          description: 현재 구현의 비밀번호 비교 단계에 사용되나 처리 오류가 있습니다.
-      description: 현재 인증 미들웨어가 없습니다. 업데이트가 먼저 수행된 후 비밀번호 비교 단계에서 오류가 발생할 수 있습니다.
-      required:
-        - user_id
+          minLength: 8
+          maxLength: 64
+        current_password:
+          type: string
+          description: new_password를 보낼 때 필수
     CreateSessionRequest:
       type: object
       properties:
