@@ -27,12 +27,16 @@ function DetailBottomBar({ meetupId, canEdit, onJoin, isJoining = false }: Detai
           </button>
         )}
 
-        {/* leader_id 로그인 사용자는 본인 항해에 참여 신청할 수 없으므로 버튼을 노출하지 않는다. */}
-        {!canEdit && (
-          <button type="button" className={styles.joinButton} onClick={onJoin} disabled={isJoining}>
-            {isJoining ? '신청 중...' : '항해 참여하기'}
-          </button>
-        )}
+        {/* leader_id 로그인 사용자는 본인 항해에 참여 신청할 수 없으므로 버튼을 비활성화한다(숨기지 않음). */}
+        <button
+          type="button"
+          className={styles.joinButton}
+          onClick={onJoin}
+          disabled={canEdit || isJoining}
+          title={canEdit ? '본인이 개설한 항해에는 참여 신청할 수 없습니다.' : undefined}
+        >
+          {isJoining ? '신청 중...' : '항해 참여하기'}
+        </button>
       </div>
     </div>
   );

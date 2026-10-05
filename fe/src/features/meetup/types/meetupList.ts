@@ -10,6 +10,7 @@ export interface MeetupListItem {
   schedule: string;
   time: string;
   firstDate: string;
+  lastDate: string;
   status: MeetupStatus;
   image: string;
 }

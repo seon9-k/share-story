@@ -58,11 +58,15 @@ function SessionScheduleSection({
                 value={session.time}
                 onChange={(event) => {
                   const value = event.target.value;
+                  const inputElement = event.currentTarget;
                   onChange(index, 'time', value);
-                  // 시(時)만 고른 중간 상태에서는 그대로 두고, 분까지 완성됐을 때만 다음 동작으로 넘어간다.
+                  // 시(時)만 고른 중간 상태에서는 그대로 두고, 분까지 완성됐을 때만 선택창을 닫는다.
                   if (!/^\d{2}:\d{2}$/.test(value)) return;
-                  if (editableEndTime) event.currentTarget.blur();
-                  else topicInputRefs.current[index]?.focus();
+                  // blur를 동기 호출하면 네이티브 시간 선택창의 커밋 처리를 끊어 한 번에 닫히지 않으므로 다음 틱으로 미룬다.
+                  setTimeout(() => {
+                    inputElement.blur();
+                    if (!editableEndTime) topicInputRefs.current[index]?.focus();
+                  }, 0);
                 }}
                 placeholder="시작 시간"
                 aria-label={`${session.number}회차 시작 시간`}
@@ -76,8 +80,10 @@ function SessionScheduleSection({
                   value={session.endTime}
                   onChange={(event) => {
                     const value = event.target.value;
+                    const inputElement = event.currentTarget;
                     onChange(index, 'endTime', value);
-                    if (/^\d{2}:\d{2}$/.test(value)) event.currentTarget.blur();
+                    if (!/^\d{2}:\d{2}$/.test(value)) return;
+                    setTimeout(() => inputElement.blur(), 0);
                   }}
                   placeholder="종료 시간"
                   aria-label={`${session.number}회차 종료 시간`}

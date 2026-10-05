@@ -17,6 +17,15 @@ export default function MeetupInfoSection({
           required
         />
       </Field>
+      <Field label="책 이미지 URL">
+        <TextInput
+          type="url"
+          name="bookImageUrl"
+          value={form.bookImageUrl}
+          onChange={(e) => onChange('bookImageUrl', e.target.value)}
+          placeholder="https://..."
+        />
+      </Field>
       <Field label="항해 제목" required>
         <TextInput
           name="meetupTitle"

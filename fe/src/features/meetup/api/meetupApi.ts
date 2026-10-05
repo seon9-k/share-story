@@ -20,6 +20,7 @@ export interface MeetupListApiItem {
 	status: string;
 	leader_name: string | null;
 	sch_st_date: string | null;
+	sch_ed_date: string | null;
 	sch_day: string | null;
 	sch_time: string | null;
 }
@@ -192,6 +193,7 @@ export async function fetchMeetupSectionItems(): Promise<Meetup[]> {
 		maxMembers: item.maxMembers,
 		status: item.status,
 		nextMeeting: `${item.schedule} · ${item.time}`,
+		dateRange: `${item.firstDate}~${item.lastDate}`,
 		location: '상세 안내 확인',
 		image: item.image,
 	}));

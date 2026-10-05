@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 import { applyMeetup, getMeetupDetail } from '../../api/meetupApi';
+import { getCurrentUserId } from '../../lib/currentUser';
 import type { MeetupDetail } from '../../types/meetupDetail';
 import { EmptyState, ActionLink, Notice } from '../../../../shared/ui';
 
@@ -25,11 +26,7 @@ function MeetupDetailView() {
   const [isJoining, setIsJoining] = useState(false);
   const [message, setMessage] = useState('');
 
-  const loginUserId =
-    localStorage.getItem('user_id') ||
-    localStorage.getItem('leader_id') ||
-    import.meta.env.VITE_DEV_USER_ID ||
-    import.meta.env.VITE_DEV_LEADER_ID;
+  const loginUserId = getCurrentUserId();
 
   useEffect(() => {
     let isMounted = true;
@@ -56,12 +53,13 @@ function MeetupDetailView() {
       />
     );
 
+  const isLeader = Boolean(loginUserId && loginUserId === meetup.leaderId?.trim());
+  if (import.meta.env.DEV) {
+    console.log('[MeetupDetail] loginUserId / leaderId / isLeader', loginUserId, meetup.leaderId, isLeader);
+  }
+
   const handleJoin = async () => {
-    const userId =
-      localStorage.getItem('user_id') ||
-      localStorage.getItem('leader_id') ||
-      import.meta.env.VITE_DEV_USER_ID ||
-      import.meta.env.VITE_DEV_LEADER_ID;
+    const userId = getCurrentUserId();
 
     if (!userId) {
       setMessage('참여 신청을 위해 localStorage user_id 또는 VITE_DEV_USER_ID 설정이 필요합니다.');
@@ -114,7 +112,7 @@ function MeetupDetailView() {
       {message && <Notice>{message}</Notice>}
       <DetailBottomBar
         meetupId={meetup.id}
-        canEdit={Boolean(loginUserId && loginUserId === meetup.leaderId)}
+        canEdit={isLeader}
         onJoin={handleJoin}
         isJoining={isJoining}
       />
