@@ -1,9 +1,14 @@
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { FormSection, TextInput, Button } from '../../../../shared/ui';
 import type { MeetupSession } from '../../types/meetupForm';
 import { toKoreanDay } from '../../lib/meetupMapper';
 
 import styles from './FormSection.module.css';
+
+// 시·분(오전/오후 세그먼트가 없는 환경이 대부분)을 클릭하는 동안에는 닫히지 않도록 마지막 클릭 후 이만큼 기다린다.
+const TIME_PICKER_CLOSE_DELAY_MS = 600;
+// 시/분만 고르고 닫히지 않도록, 이 횟수만큼 선택해야만 닫는다(오전/오후 세그먼트가 없으면 시·분 2회로 충분).
+const MIN_SELECTIONS_BEFORE_CLOSE = 2;
 
 interface SessionScheduleSectionProps {
   sessions: MeetupSession[];
@@ -28,6 +33,18 @@ function SessionScheduleSection({
 }: SessionScheduleSectionProps) {
   const isFixed = typeof fixedCount === 'number';
   const topicInputRefs = useRef<Array<HTMLInputElement | null>>([]);
+  const startTimeCloseTimers = useRef<Array<ReturnType<typeof setTimeout> | undefined>>([]);
+  const endTimeCloseTimers = useRef<Array<ReturnType<typeof setTimeout> | undefined>>([]);
+  const startTimeSelectionCounts = useRef<number[]>([]);
+  const endTimeSelectionCounts = useRef<number[]>([]);
+
+  useEffect(
+    () => () => {
+      startTimeCloseTimers.current.forEach((timer) => timer && clearTimeout(timer));
+      endTimeCloseTimers.current.forEach((timer) => timer && clearTimeout(timer));
+    },
+    [],
+  );
 
   return (
     <FormSection title="회차별 일정 / 주제">
@@ -56,17 +73,34 @@ function SessionScheduleSection({
                 required
                 className={styles.sessionTimeInput}
                 value={session.time}
+                onFocus={() => {
+                  startTimeSelectionCounts.current[index] = 0;
+                }}
+                onKeyDown={(event) => {
+                  // Enter로 직접 확정/닫기를 할 수 있게 허용한다.
+                  if (event.key !== 'Enter') return;
+                  event.preventDefault();
+                  if (startTimeCloseTimers.current[index]) clearTimeout(startTimeCloseTimers.current[index]);
+                  event.currentTarget.blur();
+                  startTimeSelectionCounts.current[index] = 0;
+                  if (!editableEndTime) topicInputRefs.current[index]?.focus();
+                }}
                 onChange={(event) => {
                   const value = event.target.value;
                   const inputElement = event.currentTarget;
                   onChange(index, 'time', value);
                   // 시(時)만 고른 중간 상태에서는 그대로 두고, 분까지 완성됐을 때만 선택창을 닫는다.
                   if (!/^\d{2}:\d{2}$/.test(value)) return;
-                  // blur를 동기 호출하면 네이티브 시간 선택창의 커밋 처리를 끊어 한 번에 닫히지 않으므로 다음 틱으로 미룬다.
-                  setTimeout(() => {
+                  const nextCount = (startTimeSelectionCounts.current[index] ?? 0) + 1;
+                  startTimeSelectionCounts.current[index] = nextCount;
+                  // 시·분·오전/오후을 연이어 클릭하는 동안에는 닫지 않도록, 최소 선택 횟수를 채운 뒤만 타이머를 걸어 닫는다.
+                  if (nextCount < MIN_SELECTIONS_BEFORE_CLOSE) return;
+                  if (startTimeCloseTimers.current[index]) clearTimeout(startTimeCloseTimers.current[index]);
+                  startTimeCloseTimers.current[index] = setTimeout(() => {
                     inputElement.blur();
+                    startTimeSelectionCounts.current[index] = 0;
                     if (!editableEndTime) topicInputRefs.current[index]?.focus();
-                  }, 0);
+                  }, TIME_PICKER_CLOSE_DELAY_MS);
                 }}
                 placeholder="시작 시간"
                 aria-label={`${session.number}회차 시작 시간`}
@@ -78,12 +112,29 @@ function SessionScheduleSection({
                   required
                   className={styles.sessionTimeInput}
                   value={session.endTime}
+                  onFocus={() => {
+                    endTimeSelectionCounts.current[index] = 0;
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key !== 'Enter') return;
+                    event.preventDefault();
+                    if (endTimeCloseTimers.current[index]) clearTimeout(endTimeCloseTimers.current[index]);
+                    event.currentTarget.blur();
+                    endTimeSelectionCounts.current[index] = 0;
+                  }}
                   onChange={(event) => {
                     const value = event.target.value;
                     const inputElement = event.currentTarget;
                     onChange(index, 'endTime', value);
                     if (!/^\d{2}:\d{2}$/.test(value)) return;
-                    setTimeout(() => inputElement.blur(), 0);
+                    const nextCount = (endTimeSelectionCounts.current[index] ?? 0) + 1;
+                    endTimeSelectionCounts.current[index] = nextCount;
+                    if (nextCount < MIN_SELECTIONS_BEFORE_CLOSE) return;
+                    if (endTimeCloseTimers.current[index]) clearTimeout(endTimeCloseTimers.current[index]);
+                    endTimeCloseTimers.current[index] = setTimeout(() => {
+                      inputElement.blur();
+                      endTimeSelectionCounts.current[index] = 0;
+                    }, TIME_PICKER_CLOSE_DELAY_MS);
                   }}
                   placeholder="종료 시간"
                   aria-label={`${session.number}회차 종료 시간`}

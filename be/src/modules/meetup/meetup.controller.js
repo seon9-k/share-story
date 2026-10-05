@@ -5,6 +5,19 @@ const {
 } = require('./meetup.validation');
 const meetupService = require('./meetup.service');
 
+/* POST /meetup/book-image 도서 이미지 업로드. 저장된 파일명을 book_image_url 후보값으로 반환한다. */
+function uploadBookImage(req, res) {
+  if (!req.file) {
+    return res.status(400).json({ success: false, message: '이미지 파일이 필요합니다.' });
+  }
+  const url = `/files/${req.file.filename}`;
+  return res.status(201).json({
+    success: true,
+    message: '이미지가 업로드되었습니다.',
+    document: { filename: req.file.filename, url }
+  });
+}
+
 const getLoginUserId = (req) => req.user?.user_id || req.user?.id || req.user_id;
 const getRequestUserId = (req, bodyField = 'user_id') =>
   getLoginUserId(req) || (process.env.NODE_ENV === 'development' ? req.body?.[bodyField] : undefined);
@@ -126,5 +139,6 @@ module.exports = {
   updateMeetup,
   listMeetups,
   getMeetupDetail,
-  applyMeetup
+  applyMeetup,
+  uploadBookImage
 };
