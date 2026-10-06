@@ -32,7 +32,7 @@ export default function MeetupInfoSection({
   };
 
   return (
-    <FormSection number={1} title="도서 · 항해 정보">
+    <FormSection title="도서 · 항해 정보">
       <Field label="함께 읽을 도서" required>
         <TextInput
           name="bookTitle"

@@ -32,6 +32,10 @@ function SessionScheduleSection({
   editableEndTime = true,
 }: SessionScheduleSectionProps) {
   const isFixed = typeof fixedCount === 'number';
+  const today = new Date();
+  const minDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(
+    today.getDate(),
+  ).padStart(2, '0')}`;
   const topicInputRefs = useRef<Array<HTMLInputElement | null>>([]);
   const startTimeCloseTimers = useRef<Array<ReturnType<typeof setTimeout> | undefined>>([]);
   const endTimeCloseTimers = useRef<Array<ReturnType<typeof setTimeout> | undefined>>([]);
@@ -60,6 +64,7 @@ function SessionScheduleSection({
                 type="date"
                 required
                 className={styles.sessionDateInput}
+                min={minDate}
                 value={session.date}
                 onChange={(event) => onChange(index, 'date', event.target.value)}
                 placeholder="날짜"

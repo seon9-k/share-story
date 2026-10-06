@@ -5,6 +5,7 @@ import type { MeetupForm, MeetupSession } from '../../types/meetupForm';
 import { createMeetup } from '../../api/meetupApi';
 import { toCreateMeetupRequest, addHoursToTime } from '../../lib/meetupMapper';
 import { validateMeetup, validateLeaderUserIdentity } from '../../lib/meetupValidation';
+import { getCurrentUserId } from '../../lib/currentUser';
 import { Button, Notice } from '../../../../shared/ui';
 
 import MeetupInfoSection from './MeetupInfoSection';
@@ -107,14 +108,8 @@ function MeetupCreateView() {
       return;
     }
 
-    const leaderId =
-      localStorage.getItem('user_id') || localStorage.getItem('leader_id') || import.meta.env.VITE_DEV_LEADER_ID || '';
-    const userId =
-      localStorage.getItem('user_id') ||
-      localStorage.getItem('leader_id') ||
-      import.meta.env.VITE_DEV_USER_ID ||
-      import.meta.env.VITE_DEV_LEADER_ID ||
-      '';
+    const leaderId = getCurrentUserId();
+    const userId = leaderId;
 
     const identityMessage = validateLeaderUserIdentity(leaderId, userId);
     if (identityMessage) {

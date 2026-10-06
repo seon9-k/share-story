@@ -133,10 +133,12 @@ export async function uploadBookImage(file: File, userId?: string): Promise<{ fi
 }
 
 export async function createMeetup(payload: CreateMeetupPayload) {
+	const token = getToken();
 	const response = await fetch(`${API_BASE_URL}/meetup`, {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json',
+			...(token ? { Authorization: `Bearer ${token}` } : {}),
 		},
 		body: JSON.stringify(payload),
 	});
@@ -229,10 +231,12 @@ export async function fetchMeetupSectionItems(): Promise<Meetup[]> {
 }
 
 export async function applyMeetup(meetupId: number, userId: string) {
+	const token = getToken();
 	const response = await fetch(`${API_BASE_URL}/meetup/${meetupId}/apply`, {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json',
+			...(token ? { Authorization: `Bearer ${token}` } : {}),
 		},
 		body: JSON.stringify({ user_id: userId, meetup_id: meetupId }),
 	});
@@ -273,10 +277,12 @@ export async function updateMeetup(
 		}>;
 	},
 ) {
+	const token = getToken();
 	const response = await fetch(`${API_BASE_URL}/meetup/${meetupId}`, {
 		method: 'PATCH',
 		headers: {
 			'Content-Type': 'application/json',
+			...(token ? { Authorization: `Bearer ${token}` } : {}),
 		},
 		body: JSON.stringify({
 			user_id: params.userId,
