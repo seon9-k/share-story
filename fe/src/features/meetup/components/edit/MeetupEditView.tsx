@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getMeetupDetail, updateMeetup } from '../../api/meetupApi';
 import { toKoreanDay, addHoursToTime } from '../../lib/meetupMapper';
+import { getCurrentUserId } from '../../lib/currentUser';
 import type { MeetupDetail, MeetupDetailSession } from '../../types/meetupDetail';
 import SessionScheduleSection from '../create/SessionScheduleSection';
 import {
@@ -81,13 +82,9 @@ function MeetupEditForm({ meetup }: { meetup: MeetupDetail }) {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    const userId =
-      localStorage.getItem('user_id') ||
-      localStorage.getItem('leader_id') ||
-      import.meta.env.VITE_DEV_USER_ID ||
-      import.meta.env.VITE_DEV_LEADER_ID;
+    const userId = getCurrentUserId();
     if (!userId) {
-      setMessage('모임 수정을 위해 localStorage user_id 또는 VITE_DEV_USER_ID 설정이 필요합니다.');
+      setMessage('모임 수정을 위해 로그인이 필요합니다.');
       return;
     }
 

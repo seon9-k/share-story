@@ -11,7 +11,7 @@ export default function PaymentSection({
   onChange: (field: keyof MeetupForm, value: string) => void;
 }) {
   return (
-    <FormSection number={4} title="참여 금액 · 납부 방법">
+    <FormSection title="참여 금액 · 납부 방법">
       <div className={styles.row}>
         <Field label="참여 금액 (원)" required>
           <TextInput

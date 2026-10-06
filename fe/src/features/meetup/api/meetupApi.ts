@@ -2,6 +2,7 @@ import type { CreateMeetupPayload } from '../types/meetupForm';
 import type { Meetup } from '../types/meetup';
 import type { MeetupDetail } from '../types/meetupDetail';
 import type { MeetupListItem } from '../types/meetupList';
+import { getToken } from '../../../shared/api/client';
 import {
 	mapMeetupDetailToDetail,
 	mapMeetupDetailToListItem,
@@ -103,11 +104,41 @@ const extractErrorMessage = (payload: any, fallback: string) => {
 	return `${baseMessage} (${details})`;
 };
 
+export async function uploadBookImage(file: File, userId?: string): Promise<{ filename: string; url: string }> {
+	const formData = new FormData();
+	formData.append('image', file);
+	if (userId) formData.append('user_id', userId);
+
+	const token = getToken();
+	const response = await fetch(`${API_BASE_URL}/meetup/book-image`, {
+		method: 'POST',
+		headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+		body: formData,
+	});
+
+	const raw = await response.text();
+	let data: any = null;
+	try {
+		data = raw ? JSON.parse(raw) : null;
+	} catch {
+		data = null;
+	}
+
+	if (!response.ok || data?.success === false) {
+		throw new Error(extractErrorMessage(data, '이미지 업로드에 실패했습니다.'));
+	}
+
+	// BE는 상대 경로만 내려주므로, 화면에 바로 표시/저장할 수 있도록 절대 URL로 변환한다.
+	return { filename: data.document.filename, url: `${API_BASE_URL}${data.document.url}` };
+}
+
 export async function createMeetup(payload: CreateMeetupPayload) {
+	const token = getToken();
 	const response = await fetch(`${API_BASE_URL}/meetup`, {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json',
+			...(token ? { Authorization: `Bearer ${token}` } : {}),
 		},
 		body: JSON.stringify(payload),
 	});
@@ -200,10 +231,12 @@ export async function fetchMeetupSectionItems(): Promise<Meetup[]> {
 }
 
 export async function applyMeetup(meetupId: number, userId: string) {
+	const token = getToken();
 	const response = await fetch(`${API_BASE_URL}/meetup/${meetupId}/apply`, {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json',
+			...(token ? { Authorization: `Bearer ${token}` } : {}),
 		},
 		body: JSON.stringify({ user_id: userId, meetup_id: meetupId }),
 	});
@@ -244,10 +277,12 @@ export async function updateMeetup(
 		}>;
 	},
 ) {
+	const token = getToken();
 	const response = await fetch(`${API_BASE_URL}/meetup/${meetupId}`, {
 		method: 'PATCH',
 		headers: {
 			'Content-Type': 'application/json',
+			...(token ? { Authorization: `Bearer ${token}` } : {}),
 		},
 		body: JSON.stringify({
 			user_id: params.userId,
