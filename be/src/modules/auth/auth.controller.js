@@ -79,5 +79,15 @@ const updateMyInfo = handle(async (req, res) => {
   return res.status(200).json({ success: true, document, message: '회원정보가 수정되었습니다.' });
 });
 
+// 회원탈퇴 (authorization 미들웨어 필수). 토큰의 본인만 탈퇴
+const withdraw = handle(async (req, res) => {
+  const { password } = req.body ?? {};
+  if (typeof password !== 'string' || !password)
+    return badRequest(res, '비밀번호를 입력해 주세요.');
+
+  await authService.withdraw(req.user_id, password);
+  return res.status(200).json({ success: true, message: '회원탈퇴가 완료되었습니다.' });
+});
+
 // 기존 getAuth는 라우트에 연결되지 않았고 /member/me와 중복이라 삭제
-module.exports = { signUp, login, checkUserId, updateMyInfo };
+module.exports = { signUp, login, checkUserId, updateMyInfo, withdraw };

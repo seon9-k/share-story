@@ -35,13 +35,13 @@ test('내 정보는 필요한 필드만 조회하고 비밀번호는 반환하�
   db.User = {
     findOne: async (options) => {
       query = options;
-      return { user_id: 'kim', name: '김항해', email: 'kim@share.story', password: 'hash' };
+      return { user_id: 'kim', name: '김항해', email: 'kim@share.story', password: 'hash', gender: 'M', age_group: '30대', monthly_reading_volume: 'BOOKS_1_2', genre_1: 'NOVEL', genre_2: null };
     },
   };
   const document = await profile.me({ userId: 'kim' });
   assert.deepEqual(query.where, { user_id: 'kim' });
-  assert.deepEqual(query.attributes, ['user_id', 'name', 'email']);
-  assert.deepEqual(document, { user_id: 'kim', name: '김항해', email: 'kim@share.story' });
+  assert.deepEqual(query.attributes, ['user_id', 'name', 'email', 'gender', 'age_group', 'monthly_reading_volume', 'genre_1', 'genre_2']);
+  assert.deepEqual(document, { user_id: 'kim', name: '김항해', email: 'kim@share.story', gender: 'M', age_group: '30대', readingAmount: 'BOOKS_1_2', genres: ['NOVEL'] });
 });
 
 test('회원이 없으면 404', async () => {
@@ -62,6 +62,6 @@ test('성공 응답은 document로 감싸 반환', async () => {
   assert.equal(res.code, 200);
   assert.deepEqual(res.body, {
     success: true,
-    document: { user_id: 'kim', name: null, email: null },
+    document: { user_id: 'kim', name: null, email: null, gender: null, age_group: null, readingAmount: null, genres: [] },
   });
 });

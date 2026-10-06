@@ -1,6 +1,6 @@
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../../auth';
-import { meetupStatus, type MemberMeetup, type MemberRole } from '../../../member';
+import { meetupStatusLabel, type MemberMeetup, type MemberRole } from '../../../member';
 import { useProfile } from '../../../user';
 import { useAllPages } from '../../../../shared/hooks/useResource';
 import { PageContainer, PageHeading, ActionLink, EmptyState } from '../../../../shared/ui';
@@ -52,7 +52,7 @@ export default function JournalDashboard({ initialView = 'crew' }: { initialView
             {meetup.book_image_url && (
               <img className={styles.cover} src={meetup.book_image_url} alt="" />
             )}
-            <span className={styles.badge}>{meetupStatus[meetup.status]}</span>
+            <span className={styles.badge}>{meetupStatusLabel(meetup)}</span>
             <h2>{meetup.title}</h2>
             <p>{meetup.book_title}</p>
             <div className={styles.actions}>

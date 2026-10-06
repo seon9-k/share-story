@@ -39,7 +39,8 @@ export default function MyLogbooksView() {
 }
 function SessionLogbooks({ meetupId, sessions }: { meetupId: string; sessions: MemberSession[] }) {
   const [mode, setMode] = useState<'write' | 'mine'>('write');
-  const [saved, setSaved] = useState<Record<string, Logbook>>({});
+  // 제출(Logbook)·삭제(null) 결과를 회차별로 보관. null이 조회 결과를 덮어 미제출로 표시
+  const [saved, setSaved] = useState<Record<string, Logbook | null>>({});
   const [message, setMessage] = useState('');
   // 내 로그북 목록 전용 API가 없어 모임의 각 세션에 대해 /me를 조회해 모음
   const load = useCallback(
@@ -116,6 +117,10 @@ function SessionLogbooks({ meetupId, sessions }: { meetupId: string; sessions: M
                         onSaved={(value) => {
                           setSaved((previous) => ({ ...previous, [sessionId]: value }));
                           setMessage(`${session.session_number}회차 로그북을 제출했습니다.`);
+                        }}
+                        onDeleted={() => {
+                          setSaved((previous) => ({ ...previous, [sessionId]: null }));
+                          setMessage(`${session.session_number}회차 로그북을 삭제했습니다.`);
                         }}
                       />
                     </details>

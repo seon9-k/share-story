@@ -10,11 +10,13 @@ export default function LogbookEditor({
   session,
   logbook,
   onSaved,
+  onDeleted,
 }: {
   meetupId: string;
   session: MemberSession;
   logbook: Logbook | null;
   onSaved: (book: Logbook) => void;
+  onDeleted: () => void;
 }) {
   const [content, setContent] = useState(logbook?.content || '');
   const [submitting, setSubmitting] = useState(false);
@@ -31,12 +33,38 @@ export default function LogbookEditor({
     window.addEventListener('beforeunload', warn);
     return () => window.removeEventListener('beforeunload', warn);
   }, [dirty]);
+  // 본인 로그북 삭제. 성공한 경우에만 화면에서 제거
+  const remove = async () => {
+    if (!logbook || submitting) return;
+    if (!window.confirm(`${session.session_number}회차 로그북을 삭제할까요?`)) return;
+    setSubmitting(true);
+    setError('');
+    try {
+      await documentRequest(`${logbookPath(meetupId, String(session.session_id))}/me`, {
+        method: 'DELETE',
+      });
+      setContent('');
+      onDeleted();
+    } catch (error) {
+      setError(error instanceof Error ? error.message : '삭제에 실패했습니다.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+  const deleteButton = logbook && (
+    <Button variant="secondary" onClick={remove} disabled={submitting}>
+      로그북 삭제
+    </Button>
+  );
   // 현재 BE는 취소된 세션만 제출을 막음. 회차별 작성 기간은 아직 미제공
+  // 삭제는 취소된 세션에서도 허용
   if (session.status === 'CANCELLED')
     return (
       <div>
         <Notice>취소된 세션에는 로그북을 제출하거나 수정할 수 없습니다.</Notice>
         <div className={styles.content}>{logbook?.content}</div>
+        {error && <Notice>{error}</Notice>}
+        {deleteButton}
       </div>
     );
   return (
@@ -76,8 +104,9 @@ export default function LogbookEditor({
       </p>
       {error && <Notice>{error}</Notice>}
       <Button type="submit" disabled={submitting || !content.trim()}>
-        {submitting ? '제출 중…' : logbook ? '수정하여 다시 제출' : '로그북 제출'}
+        {submitting ? '처리 중…' : logbook ? '수정하여 다시 제출' : '로그북 제출'}
       </Button>
+      {deleteButton}
     </form>
   );
 }

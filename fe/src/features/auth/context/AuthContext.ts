@@ -8,6 +8,8 @@ export interface AuthContextValue {
   user: AuthUser | null;
   login: (user_id: string, password: string) => Promise<void>;
   logout: () => void;
+  // 회원탈퇴 요청. 로그아웃은 호출한 화면이 이동 후 처리
+  withdraw: (password: string) => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null);

@@ -162,6 +162,10 @@ export const api = {
   login: (params: LoginParams) =>
     request<LoginResponse>('/auth/login', { method: 'POST', body: params }),
 
+  // 회원탈퇴. 본인 확인용 비밀번호 전송, 토큰으로 대상 결정
+  withdraw: (password: string) =>
+    request<MessageResponse>('/auth/me', { method: 'DELETE', body: { password }, auth: true }),
+
   // 본인 정보 수정. BE가 토큰으로 본인 확인하므로 auth: true 필수
   updateMyInfo: (params: UpdateMyInfoParams) =>
     request<UserResponse>('/auth/updateMyInfo', { method: 'PATCH', body: params, auth: true }),
