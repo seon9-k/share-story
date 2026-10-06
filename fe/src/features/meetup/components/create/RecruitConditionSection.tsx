@@ -7,8 +7,13 @@ export default function RecruitConditionSection({
   form: MeetupForm;
   onChange: (field: keyof MeetupForm, value: string) => void;
 }) {
+  const today = new Date();
+  const minDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(
+    today.getDate(),
+  ).padStart(2, '0')}`;
+
   return (
-    <FormSection number={2} title="Zoom · 모집 조건">
+    <FormSection title="Zoom · 모집 조건">
       <Field label="Zoom URL" required>
         <TextInput
           name="zoomUrl"
@@ -17,9 +22,10 @@ export default function RecruitConditionSection({
           onChange={(e) => onChange('zoomUrl', e.target.value)}
         />
       </Field>
-      <Field label="Zoom 비밀번호">
+      <Field label="Zoom 비밀번호" required>
         <TextInput
           name="zoomPassword"
+          required
           value={form.zoomPassword}
           onChange={(e) => onChange('zoomPassword', e.target.value)}
         />
@@ -48,6 +54,7 @@ export default function RecruitConditionSection({
         <TextInput
           type="date"
           name="deadline"
+          min={minDate}
           required
           value={form.deadline}
           onChange={(e) => onChange('deadline', e.target.value)}

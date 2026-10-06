@@ -1,0 +1,6 @@
+*.js.map
+*.ts
+.vscode
+local.settings.json
+test
+.funcignore

@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 
 import { applyMeetup, getMeetupDetail } from '../../api/meetupApi';
-import { getCurrentUserId } from '../../lib/currentUser';
+import { useAuth } from '../../../auth';
 import type { MeetupDetail } from '../../types/meetupDetail';
 import { EmptyState, ActionLink, Notice } from '../../../../shared/ui';
 
@@ -18,6 +18,8 @@ import styles from './MeetupDetailView.module.css';
 
 function MeetupDetailView() {
   const { meetupId } = useParams<{ meetupId: string }>();
+  const navigate = useNavigate();
+  const { user } = useAuth();
 
   const id = Number(meetupId);
 
@@ -26,7 +28,7 @@ function MeetupDetailView() {
   const [isJoining, setIsJoining] = useState(false);
   const [message, setMessage] = useState('');
 
-  const loginUserId = getCurrentUserId();
+  const loginUserId = user?.user_id;
 
   useEffect(() => {
     let isMounted = true;
@@ -59,12 +61,13 @@ function MeetupDetailView() {
   }
 
   const handleJoin = async () => {
-    const userId = getCurrentUserId();
-
-    if (!userId) {
-      setMessage('참여 신청을 위해 localStorage user_id 또는 VITE_DEV_USER_ID 설정이 필요합니다.');
+    // 비로그인 사용자가 참여 신청을 누르면 로그인 화면으로 보내고, 로그인 후 이 화면으로 되돌아오게 한다.
+    if (!user) {
+      navigate('/login', { state: { from: `/meetups/${id}` } });
       return;
     }
+
+    const userId = user.user_id;
 
     try {
       setIsJoining(true);

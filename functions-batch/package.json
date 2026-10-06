@@ -1,0 +1,12 @@
+{
+  "name": "sharestory-batch-functions",
+  "version": "1.0.0",
+  "description": "Timer-triggered Azure Functions that invoke the existing share-story backend batch endpoints on a schedule.",
+  "scripts": {
+    "start": "func start"
+  },
+  "dependencies": {
+    "@azure/functions": "^4.8.0"
+  },
+  "main": "src/functions/*.js"
+}
