@@ -7,3 +7,4 @@ export interface ReviewItem {
   apply: { user_id: string; User: { name: string } | null };
 }
 export const reviewPath = (meetupId: string) => `/review/meetups/${encodeURIComponent(meetupId)}`;
+export const ownReviewPath = (meetupId: string) => `${reviewPath(meetupId)}/me`;

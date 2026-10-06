@@ -6,4 +6,5 @@ const params = (req) => ({
 });
 exports.save = endpoint((req) => service.save({ ...params(req), content: content(req.body) }));
 exports.mine = endpoint((req) => service.mine(params(req)));
+exports.remove = endpoint((req) => service.remove(params(req)));
 exports.list = endpoint((req) => service.list({ ...params(req), paging: pagination(req.query) }));

@@ -4,4 +4,8 @@ const params = (req) => ({ userId: req.user_id, meetupId: id(req.params.meetup_i
 exports.create = endpoint((req) => service.create({
   ...params(req), content: content(req.body), rating: req.body.rating
 }), 201);
+exports.update = endpoint((req) => service.update({
+  ...params(req), content: content(req.body), rating: req.body.rating
+}));
+exports.remove = endpoint((req) => service.remove(params(req)));
 exports.list = endpoint((req) => service.list({ ...params(req), paging: pagination(req.query) }));

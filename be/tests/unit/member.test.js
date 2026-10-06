@@ -88,6 +88,23 @@ test('application locks meetup and uses authenticated identity', async () => {
   assert.equal(result.status, 'ING');
 });
 
+test('application that fills capacity closes meetup in the same transaction', async () => {
+  apply = null;
+  let closed;
+  meetup.update = async (values, options) => {
+    assert.ok(options.transaction);
+    closed = values;
+  };
+  db.Apply.count = async () => 3;
+  await member.applyMeetup(args);
+  assert.deepEqual(closed, { status: 'CLOSED', updated_user_id: 'crew' });
+
+  closed = undefined;
+  db.Apply.count = async () => 2;
+  await member.applyMeetup(args);
+  assert.equal(closed, undefined);
+});
+
 test('reject duplicate, captain, deadline, closed status, full meetup applications', async () => {
   await rejects(() => member.applyMeetup(args), 409);
   await rejects(() => member.applyMeetup({ ...args, userId: 'captain' }), 400);
@@ -321,4 +338,81 @@ test('separate captain and crew controllers fix the role and preserve pagination
     assert.equal(query.offset, 2);
     assert.equal(query.limit, 2);
   }
+});
+
+// 삭제 기능: 본인 apply_id 기준으로만 조회·삭제, 삭제 후 재작성은 복구
+const softRow = (values) => {
+  const row = {
+    ...values,
+    deleted_at: values.deleted_at ?? null,
+    calls: [],
+    update: async (v) => {
+      row.calls.push(['update', v]);
+      Object.assign(row, v);
+      return row;
+    },
+    destroy: async () => {
+      row.calls.push(['destroy']);
+      row.deleted_at = new Date();
+    },
+    restore: async () => {
+      row.calls.push(['restore']);
+      row.deleted_at = null;
+    },
+  };
+  return row;
+};
+
+test('logbook delete removes only the requester logbook', async () => {
+  const book = softRow({ logbook_id: '5', session_id: '2', apply_id: '10' });
+  let where;
+  db.Logbook.findOne = async (options) => {
+    where = options.where;
+    return book;
+  };
+  const result = await logbook.remove(args);
+  assert.deepEqual(where, { session_id: '2', apply_id: '10' });
+  assert.equal(result.logbook_id, '5');
+  assert.equal(book.deleted_user_id, 'crew');
+  assert.ok(book.deleted_at);
+});
+
+test('logbook delete rejects missing logbook and non-members', async () => {
+  await rejects(() => logbook.remove(args), 404);
+  apply = null;
+  await rejects(() => logbook.remove(args), 403);
+});
+
+test('logbook resubmission after delete restores the same row', async () => {
+  const book = softRow({ logbook_id: '5', session_id: '2', apply_id: '10', deleted_at: new Date() });
+  db.Logbook.findOne = async (options) => {
+    assert.equal(options.paranoid, false);
+    return book;
+  };
+  const result = await logbook.save(args);
+  assert.equal(result.deleted_at, null);
+  assert.equal(result.deleted_user_id, null);
+  assert.equal(result.content, args.content);
+  assert.equal(writes.length, 0);
+});
+
+test('review delete removes only the requester review and allows rewriting', async () => {
+  meetup.status = 'COMPLETED';
+  const own = softRow({ review_id: '7', apply_id: '10' });
+  db.Review.findOne = async () => own;
+  const removed = await review.remove(args);
+  assert.equal(removed.review_id, '7');
+  assert.equal(own.deleted_user_id, 'crew');
+  assert.ok(own.deleted_at);
+  // 삭제 후 재작성: 같은 행 복구 + 내용 갱신
+  const rewritten = await review.create({ ...args, rating: 3 });
+  assert.equal(rewritten.deleted_at, null);
+  assert.equal(rewritten.rating, 3);
+  assert.equal(writes.length, 0);
+});
+
+test('review delete rejects missing review and non-members', async () => {
+  await rejects(() => review.remove(args), 404);
+  apply = null;
+  await rejects(() => review.remove(args), 403);
 });

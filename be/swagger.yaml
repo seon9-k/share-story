@@ -185,6 +185,52 @@ paths:
               '$ref': '#/components/schemas/CheckUserIdRequest'
             example:
               user_id: reader01
+  '/auth/me':
+    delete:
+      tags:
+        - Auth
+      operationId: withdraw
+      summary: 회원탈퇴 (본인)
+      description:
+        토큰의 본인만 탈퇴합니다(soft delete). 비밀번호 재확인이 필요하며 틀리면 400입니다.
+        끝나지 않은 모임의 캡틴 또는 크루이면 409입니다. 작성한 로그북·리뷰는 남으며, 아이디는 재사용할 수 없습니다.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                      - true
+                  message:
+                    type: string
+        '400':
+          '$ref': '#/components/responses/Error400'
+        '401':
+          '$ref': '#/components/responses/Error401'
+        '404':
+          '$ref': '#/components/responses/Error404'
+        '409':
+          '$ref': '#/components/responses/Error409'
+        '500':
+          '$ref': '#/components/responses/Error500'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                password:
+                  type: string
+              required:
+                - password
   '/auth/updateMyInfo':
     patch:
       tags:
@@ -787,6 +833,60 @@ paths:
           application/json:
             schema:
               '$ref': '#/components/schemas/LogbookRequest'
+    delete:
+      tags:
+        - Logbook
+      operationId: deleteMyLogbook
+      summary: 내 세션 로그북 삭제
+      description:
+        본인 로그북만 삭제합니다(soft delete, deleted_user_id 기록). 없으면 404, 크루가 아니면 403입니다.
+        삭제 후 PUT으로 다시 제출하면 같은 행을 복구해 저장합니다.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                      - true
+                  document:
+                    type: object
+                    properties:
+                      logbook_id:
+                        type: string
+                      session_id:
+                        type: string
+        '400':
+          '$ref': '#/components/responses/Error400'
+        '401':
+          '$ref': '#/components/responses/Error401'
+        '403':
+          '$ref': '#/components/responses/Error403'
+        '404':
+          '$ref': '#/components/responses/Error404'
+        '500':
+          '$ref': '#/components/responses/Error500'
+      parameters:
+        - name: meetup_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[1-9][0-9]*$'
+            example: '1'
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[1-9][0-9]*$'
+            example: '1'
   '/logbook/meetups/{meetup_id}/sessions/{session_id}':
     get:
       tags:
@@ -917,6 +1017,52 @@ paths:
             minimum: 1
             maximum: 100
             default: 10
+  '/review/meetups/{meetup_id}/me':
+    delete:
+      tags:
+        - Review
+      operationId: deleteMyReview
+      summary: 내 리뷰 삭제
+      description:
+        본인 리뷰만 삭제합니다(soft delete, deleted_user_id 기록). 없으면 404, 크루가 아니면 403입니다.
+        삭제 후 다시 작성하면 같은 행을 복구해 저장합니다.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                      - true
+                  document:
+                    type: object
+                    properties:
+                      review_id:
+                        type: string
+        '400':
+          '$ref': '#/components/responses/Error400'
+        '401':
+          '$ref': '#/components/responses/Error401'
+        '403':
+          '$ref': '#/components/responses/Error403'
+        '404':
+          '$ref': '#/components/responses/Error404'
+        '500':
+          '$ref': '#/components/responses/Error500'
+      parameters:
+        - name: meetup_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[1-9][0-9]*$'
+            example: '1'
   '/review/meetups/{meetup_id}':
     post:
       tags:
@@ -925,7 +1071,7 @@ paths:
       summary: 종료된 모임의 리뷰 작성
       description:
         해당 모임 크루만 작성합니다. Meetup.status가 COMPLETED여야 하며 Apply별 하나의 리뷰만 허용합니다.
-        모임 미종료 또는 이미 작성한 경우 409입니다.
+        모임 미종료 또는 이미 작성한 경우 409입니다. 삭제한 리뷰가 있으면 같은 행을 복구해 다시 작성합니다.
       security:
         - bearerAuth: []
       responses:
