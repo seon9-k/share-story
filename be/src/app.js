@@ -46,6 +46,8 @@ app.use('/auth', authRouter);
 app.use('/member', require('./modules/member/member.routes'));
 app.use('/logbook', require('./modules/logbook/logbook.routes'));
 app.use('/review', require('./modules/review/review.routes'));
+// 스케줄러(Function App) 전용 배치 API
+app.use('/batch', require('./modules/batch/batch.routes'));
 // Error Handler는 일반 route 등록 이후에 위치
 app.use(errorHandler);
 
