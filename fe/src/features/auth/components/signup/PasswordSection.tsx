@@ -17,7 +17,7 @@ function PasswordSection({
   const isPasswordMismatch = passwordConfirm.length > 0 && password !== passwordConfirm;
 
   return (
-    <FormSection number={2} title="비밀번호 / 비밀번호 확인">
+    <FormSection title="비밀번호 / 비밀번호 확인">
       <div className={styles.fieldGroup}>
         <TextInput
           id="password"

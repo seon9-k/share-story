@@ -22,7 +22,7 @@ function AccountSection({
   onUserIdCheck,
 }: AccountSectionProps) {
   return (
-    <FormSection number={1} title="아이디">
+    <FormSection title="아이디">
       <div className={styles.row}>
         <TextInput
           aria-label="아이디"
