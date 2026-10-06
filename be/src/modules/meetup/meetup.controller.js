@@ -18,7 +18,8 @@ function uploadBookImage(req, res) {
   });
 }
 
-const getLoginUserId = (req) => req.user?.user_id || req.user?.id || req.user_id;
+// req.user는 삭제된 auth.middleware.js만 설정했음 → authorization.js가 설정하는 req.user_id만 사용
+const getLoginUserId = (req) => req.user_id;
 const getRequestUserId = (req, bodyField = 'user_id') =>
   getLoginUserId(req) || (process.env.NODE_ENV === 'development' ? req.body?.[bodyField] : undefined);
 

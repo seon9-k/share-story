@@ -1,6 +1,8 @@
 // 기존 로그인 모듈이 저장한 토큰을 읽어 모임·로그북 API 요청에 사용
+// 인증 모듈(features/auth/lib/api/api.ts)도 이 함수들을 사용해 키를 한 곳에서 관리
 const TOKEN_KEY = 'sharestory.token';
 export const getToken = () => localStorage.getItem(TOKEN_KEY);
+export const setToken = (token: string) => localStorage.setItem(TOKEN_KEY, token);
 export const clearToken = () => localStorage.removeItem(TOKEN_KEY);
 let unauthorized: (() => void) | null = null;
 export const setUnauthorizedHandler = (handler: (() => void) | null) => {

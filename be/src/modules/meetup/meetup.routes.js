@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-//const { verifyToken } = require('../../middlewares/auth.middleware');
+// 인증은 common/middleware/authorization.js로 처리 (중복이던 middlewares/auth.middleware.js 삭제)
 const authorization = require('../../common/middleware/authorization');
 const upload = require('../../common/middleware/uploadfile');
 const meetupController = require('./meetup.controller');

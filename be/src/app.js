@@ -2,7 +2,6 @@ const express = require('express');
 const logger = require('morgan');
 const cors = require('cors');
 require('dotenv').config();
-const PORT = process.env.PORT || 3000;
 // 공통 middleware
 const errorHandler = require('./common/middleware/errorHandler');
 // const authorization = require('./common/middleware/authorization');
@@ -50,8 +49,6 @@ app.use('/review', require('./modules/review/review.routes'));
 // Error Handler는 일반 route 등록 이후에 위치
 app.use(errorHandler);
 
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
-});
-
+// 서버 실행은 server.js에서만 담당 (DB sync 완료 후 listen)
+// 기존엔 여기서도 listen해 DB 준비 전에 요청을 받았고, server.js의 두 번째 listen은 포트 충돌로 실패했음
 module.exports = app;
