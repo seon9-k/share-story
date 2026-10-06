@@ -9,17 +9,17 @@ interface EmailSectionProps {
 }
 
 const EMAIL_DOMAINS = [
-                    'gmail.com'
-                  , 'naver.com'
-                  , 'kakao.com'
-                  , 'daum.net'
-                  , 'hanmail.net'
-                  , 'nate.com'
-                  , 'outlook.com'
-                  , 'yahoo.com'
-                  , 'icloud.com'
-                  , 'zum.com'
-                ];
+  'gmail.com',
+  'naver.com',
+  'kakao.com',
+  'daum.net',
+  'hanmail.net',
+  'nate.com',
+  'outlook.com',
+  'yahoo.com',
+  'icloud.com',
+  'zum.com',
+];
 
 function EmailSection({
   emailId,
@@ -28,7 +28,7 @@ function EmailSection({
   onEmailDomainChange,
 }: EmailSectionProps) {
   return (
-    <FormSection number={3} title="이메일">
+    <FormSection title="이메일">
       <div className={styles.row}>
         <TextInput
           id="emailId"

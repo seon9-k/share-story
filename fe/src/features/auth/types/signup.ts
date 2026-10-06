@@ -31,7 +31,7 @@ export const READING_AMOUNT_OPTIONS: { value: ReadingAmount; label: string }[] =
 ];
 
 // 우선 연령대로 받음 (DB age_group·seed 기준). BE auth.validation.js AGE_GROUPS와 동일
-export const AGE_GROUP_OPTIONS = ['10대', '20대', '30대', '40대', '50대', '60대 이상'] as const;
+export const AGE_GROUP_OPTIONS = ['20대', '30대', '40대', '50대', '60대 이상'] as const;
 
 // BE는 genre_1, genre_2 두 칸만 저장
 export const MAX_GENRES = 2;

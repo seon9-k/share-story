@@ -18,7 +18,7 @@ function ProfileSection({
   onAgeGroupChange,
 }: ProfileSectionProps) {
   return (
-    <FormSection number={5} title="성별 / 연령대">
+    <FormSection title="성별 / 연령대">
       <div className={styles.fieldGroup}>
         <div className={styles.row}>
           {/* 화면엔 '남'/'여', 상태엔 'M'/'F' 저장 → BE ENUM과 일치 */}

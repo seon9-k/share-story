@@ -8,7 +8,7 @@ interface NicknameSectionProps {
 
 function NicknameSection({ name, onNameChange }: NicknameSectionProps) {
   return (
-    <FormSection number={4} title="닉네임">
+    <FormSection title="닉네임">
       <TextInput
         id="name"
         aria-label="닉네임"
