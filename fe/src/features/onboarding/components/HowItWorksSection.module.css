@@ -1,0 +1,151 @@
+.section {
+  padding: 5rem 0;
+
+  background-color: var(--color-canvas);
+}
+
+.inner {
+  width: 100%;
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.heading {
+  margin-bottom: 3.5rem;
+
+  text-align: center;
+}
+
+.eyebrow {
+  margin: 0 0 0.75rem;
+
+  color: var(--color-action);
+
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.title {
+  margin: 0;
+
+  color: var(--color-navy);
+
+  font-family: var(--font-serif);
+  font-size: 1.875rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.description {
+  max-width: 28rem;
+  margin: 1rem auto 0;
+
+  color: var(--color-secondary);
+
+  font-size: 1rem;
+  line-height: 1.625;
+}
+
+.stepGrid {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.stepCard {
+  position: relative;
+
+  padding: 1.5rem;
+
+  background-color: var(--color-surface);
+  border-radius: 1rem;
+
+  transition: box-shadow 0.2s ease;
+}
+
+.stepCard:hover {
+  box-shadow:
+    0 4px 6px -1px rgb(0 0 0 / 10%),
+    0 2px 4px -2px rgb(0 0 0 / 10%);
+}
+
+.icon {
+  margin-bottom: 1rem;
+
+  font-size: 1.875rem;
+  line-height: 1;
+}
+
+.stepNumber {
+  margin-bottom: 0.5rem;
+
+  color: var(--color-control);
+
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.stepTitle {
+  margin: 0 0 0.5rem;
+
+  color: var(--color-navy);
+
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.stepDescription {
+  margin: 0;
+
+  color: var(--color-secondary);
+
+  font-size: 0.875rem;
+  line-height: 1.625;
+}
+
+.connector {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .inner {
+    padding: 0 1.5rem;
+  }
+
+  .stepGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 768px) {
+  .section {
+    padding: 7rem 0;
+  }
+
+  .title {
+    font-size: 2.25rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .stepGrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .connector {
+    position: absolute;
+    top: 2.5rem;
+    right: -0.75rem;
+    z-index: 1;
+
+    display: block;
+
+    width: 1.5rem;
+    height: 2px;
+
+    background-color: var(--color-divider);
+  }
+}

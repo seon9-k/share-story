@@ -1,0 +1,20 @@
+.nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  max-width: 72rem;
+  margin: 4rem auto 0;
+  padding: 1rem;
+}
+.link,
+.active {
+  padding: 0.5rem;
+  color: var(--color-secondary);
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+}
+.active {
+  color: var(--color-navy);
+  border-color: var(--color-ocean);
+  font-weight: 700;
+}

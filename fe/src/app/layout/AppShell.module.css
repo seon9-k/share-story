@@ -1,0 +1,13 @@
+/* 본문이 짧아도 푸터가 창 바닥에 붙도록 화면 높이를 채움 */
+.shell {
+  display: flex;
+  flex-direction: column;
+
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* 남는 높이를 본문이 차지해 푸터를 아래로 밀어냄 */
+.main {
+  flex: 1 0 auto;
+}

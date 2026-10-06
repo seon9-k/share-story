@@ -1,0 +1,2466 @@
+---
+openapi: 3.0.3
+info:
+  title: 쉐어스토리 Backend API
+  version: 1.0.0
+  description: |-
+    be/src/app.js에 실제 연결된 라우트와 컨트롤러/서비스/모델 기준 문서입니다.
+
+    인증: POST /auth/login의 token을 Swagger Authorize에 입력하세요. Bearer 접두사는 자동으로 붙습니다. 역할은 계정의 고정 속성이 아니라 모임별 leader_id/Apply 관계입니다.
+
+    응답: 대부분 { success, document }를 사용하지만 아이디 중복 확인은 { message, count }입니다. 공통 errorHandler는 success 없이 { message }만 반환합니다. 날짜/시간 문자열과 BIGINT 문자열을 구분하세요.
+
+    현재 구현 범위: 세션 배치 router는 app.js에 등록되어 있지 않아 호출 가능한 paths에 포함하지 않았습니다. 파일 업로드 middleware도 라우트에 연결되어 있지 않습니다. 로그북 승인, 리뷰 수정/삭제, 모임 종료 처리 API는 없습니다. complete-meetups.job.js는 비어 있습니다.
+
+    실행 참고: 현재 meetup.service.js가 참조하는 common/services/mailer.service.js가 누락되어 앱 시작을 막습니다. swagger-ui-express 의존성은 있지만 Swagger UI 경로는 app.js에 등록되어 있지 않습니다. 이 파일은 Swagger Editor/UI에서 별도로 불러올 수 있습니다. 회원정보 수정 API의 기존 오류는 해당 작업 설명을 확인하세요.
+
+    캡틴 화면 조회 순서: GET /member/meetups/captain → 모임 선택 → GET /member/meetups/{meetup_id}/crews 및 /sessions → 세션 선택 → GET /logbook/meetups/{meetup_id}/sessions/{session_id}. 마지막 응답의 크루를 선택하여 logbook을 표시하며 null이면 미제출 상태를 표시합니다.
+servers:
+  - url: http://localhost:{port}
+    description: 로컬 서버 (PORT 환경변수에 맞게 설정)
+    variables:
+      port:
+        default: '3000'
+tags:
+  - name: Auth
+    description: 회원가입, 로그인 및 아이디 확인
+  - name: Meetup
+    description: 모임 생성·수정·공개 조회·신청
+  - name: Member
+    description: 마이페이지 및 모임 참여
+  - name: Logbook
+    description: 크루 로그북 제출·수정과 캡틴 조회
+  - name: Review
+    description: 종료된 모임 리뷰
+paths:
+  '/auth/signup':
+    post:
+      tags:
+        - Auth
+      operationId: signup
+      summary: 회원가입
+      description: readingAmount를 monthly_reading_volume에, genres의 첫 두 항목을 genre_1/genre_2에
+        저장합니다. 감사용 사용자 ID는 가입 user_id로 설정합니다. 모든 필드를 BE에서 검증하며(400),
+        아이디(탈퇴 회원 포함)·이메일 중복 시 409를 반환합니다.
+      security: []
+      responses:
+        '201':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                      - true
+                  document:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      user_id:
+                        type: string
+                  message:
+                    type: string
+                required:
+                  - success
+                  - document
+                  - message
+        '400':
+          '$ref': '#/components/responses/Error400'
+        '409':
+          '$ref': '#/components/responses/Error409'
+        '500':
+          '$ref': '#/components/responses/Error500'
+        '504':
+          '$ref': '#/components/responses/Error504'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              '$ref': '#/components/schemas/SignupRequest'
+            example:
+              user_id: reader01
+              password: Example1234!
+              name: 독서회원
+              email: reader@example.com
+              gender: F
+              age_group: 30대
+              readingAmount: BOOKS_1_2
+              genres:
+                - NOVEL
+                - ESSAY
+  '/auth/login':
+    post:
+      tags:
+        - Auth
+      operationId: login
+      summary: 로그인
+      description:
+        반환된 token을 Authorize에 입력합니다. JWT 만료는 하루(JWT_EXPIRES_IN, 기본 1d)입니다.
+        document에는 비밀번호 해시를 제외한 회원 정보만 반환합니다. 아이디·비밀번호 불일치는 401입니다.
+      security: []
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                      - true
+                  token:
+                    type: string
+                  message:
+                    type: string
+                  document:
+                    '$ref': '#/components/schemas/LoginUser'
+                required:
+                  - success
+                  - token
+                  - message
+                  - document
+        '400':
+          '$ref': '#/components/responses/Error400'
+        '401':
+          '$ref': '#/components/responses/Error401'
+        '500':
+          '$ref': '#/components/responses/Error500'
+        '504':
+          '$ref': '#/components/responses/Error504'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              '$ref': '#/components/schemas/LoginRequest'
+            example:
+              user_id: reader_01
+              password: Example1234!
+  '/auth/check-id':
+    post:
+      tags:
+        - Auth
+      operationId: checkUserId
+      summary: 아이디 중복 확인
+      description:
+        아이디 중복 확인입니다(기존 경로 /auth/getMyInfo에서 변경). document 래퍼 없이 count와
+        message를 반환합니다. 탈퇴 회원 아이디도 사용 중으로 셉니다. 형식이 틀린 아이디는 400입니다.
+      security: []
+      responses:
+        '400':
+          '$ref': '#/components/responses/Error400'
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  count:
+                    type: integer
+                    minimum: 0
+                required:
+                  - message
+                  - count
+        '500':
+          '$ref': '#/components/responses/Error500'
+        '504':
+          '$ref': '#/components/responses/Error504'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              '$ref': '#/components/schemas/CheckUserIdRequest'
+            example:
+              user_id: reader01
+  '/auth/updateMyInfo':
+    patch:
+      tags:
+        - Auth
+      operationId: updateMyInfo
+      summary: 회원정보 수정 (본인)
+      description:
+        토큰의 사용자 정보만 수정합니다(body.user_id는 무시). 보낸 필드만 검증 후 수정합니다.
+        비밀번호 변경 시 new_password와 current_password가 모두 필요하며, 현재 비밀번호가 틀리면 400입니다.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                      - true
+                  document:
+                    '$ref': '#/components/schemas/LoginUser'
+                  message:
+                    type: string
+                required:
+                  - success
+                  - document
+                  - message
+        '400':
+          '$ref': '#/components/responses/Error400'
+        '401':
+          '$ref': '#/components/responses/Error401'
+        '404':
+          '$ref': '#/components/responses/Error404'
+        '409':
+          '$ref': '#/components/responses/Error409'
+        '500':
+          '$ref': '#/components/responses/Error500'
+        '504':
+          '$ref': '#/components/responses/Error504'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              '$ref': '#/components/schemas/UpdateMyInfoRequest'
+            example:
+              name: 새닉네임
+              genres:
+                - NOVEL
+  '/meetup':
+    post:
+      tags:
+        - Meetup
+      operationId: createMeetup
+      summary: 모임 및 4개 세션 생성
+      description:
+        로그인 사용자가 캡틴입니다. 모임은 RECRUITING, 세션은 SCHEDULED로 생성됩니다. 예시 deadline은
+        실행 시 현재 이후 날짜로 변경하세요.
+      security:
+        - bearerAuth: []
+      responses:
+        '201':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                      - true
+                  document:
+                    '$ref': '#/components/schemas/SavedMeetupDocument'
+                  message:
+                    type: string
+                required:
+                  - success
+                  - document
+                  - message
+        '400':
+          '$ref': '#/components/responses/Error400'
+        '404':
+          '$ref': '#/components/responses/Error404'
+        '500':
+          '$ref': '#/components/responses/Error500'
+        '401':
+          '$ref': '#/components/responses/Error401'
+        '403':
+          '$ref': '#/components/responses/Error403'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              '$ref': '#/components/schemas/CreateMeetupRequest'
+            example:
+              title: 함께 읽는 독서 모임
+              description: 네 번의 독서 토론을 진행합니다.
+              book_title: 함께 읽을 책
+              price: 10000
+              min_capacity: 4
+              max_capacity: 8
+              deadline: '2026-11-01T00:00:00Z'
+              sessions:
+                - session_number: 1
+                  topic: 1회차 독서 토론
+                  sch_date: '2026-11-07'
+                  sch_day: 토요일
+                  sch_time: '19:00'
+                  sch_st_time: '19:00'
+                  sch_ed_time: '21:00'
+                - session_number: 2
+                  topic: 2회차 독서 토론
+                  sch_date: '2026-11-14'
+                  sch_day: 토요일
+                  sch_time: '19:00'
+                  sch_st_time: '19:00'
+                  sch_ed_time: '21:00'
+                - session_number: 3
+                  topic: 3회차 독서 토론
+                  sch_date: '2026-11-21'
+                  sch_day: 토요일
+                  sch_time: '19:00'
+                  sch_st_time: '19:00'
+                  sch_ed_time: '21:00'
+                - session_number: 4
+                  topic: 4회차 독서 토론
+                  sch_date: '2026-11-28'
+                  sch_day: 토요일
+                  sch_time: '19:00'
+                  sch_st_time: '19:00'
+                  sch_ed_time: '21:00'
+    get:
+      tags:
+        - Meetup
+      operationId: listMeetups
+      summary: 공개 모임 목록
+      description: 취소되지 않은 세션의 회차 순서로 시작/종료 일정을 계산합니다.
+      security: []
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                      - true
+                  document:
+                    type: object
+                    properties:
+                      page:
+                        type: integer
+                        minimum: 1
+                      limit:
+                        type: integer
+                        minimum: 1
+                        maximum: 100
+                      total:
+                        type: integer
+                        minimum: 0
+                      nextPage:
+                        type: integer
+                        nullable: true
+                      items:
+                        type: array
+                        items:
+                          '$ref': '#/components/schemas/MeetupListItem'
+                    required:
+                      - page
+                      - limit
+                      - total
+                      - nextPage
+                      - items
+                required:
+                  - success
+                  - document
+        '500':
+          '$ref': '#/components/responses/Error500'
+      parameters:
+        - name: page
+          in: query
+          description: 잘못된 숫자는 1로 보정합니다.
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: 잘못된 숫자는 10, 100 초과는 100으로 보정합니다.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+        - name: keyword
+          in: query
+          description: 모임 제목 부분 검색 (대소문자 무시)
+          schema:
+            type: string
+        - name: status
+          in: query
+          description: ''
+          schema:
+            '$ref': '#/components/schemas/MeetupStatus'
+  '/meetup/{meetup_id}':
+    get:
+      tags:
+        - Meetup
+      operationId: getMeetupDetail
+      summary: 공개 모임 상세
+      description: 세션 일정과 신청자 독서 성향 통계를 반환합니다. Zoom 접속 정보는 포함하지 않습니다.
+      security: []
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                      - true
+                  document:
+                    '$ref': '#/components/schemas/MeetupDetail'
+                required:
+                  - success
+                  - document
+        '400':
+          '$ref': '#/components/responses/Error400'
+        '404':
+          '$ref': '#/components/responses/Error404'
+        '500':
+          '$ref': '#/components/responses/Error500'
+      parameters:
+        - name: meetup_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[1-9][0-9]*$'
+            example: '1'
+          description:
+            양의 정수 식별자. member/logbook/review 및 신청 API는 최대 9223372036854775807까지
+            문자열로 처리합니다. 기존 모임 상세/수정은 Number로 변환합니다.
+    patch:
+      tags:
+        - Meetup
+      operationId: updateMeetup
+      summary: 캡틴의 모임 및 세션 수정
+      description:
+        캡틴만 수정 가능합니다. 세션 수정 시 sch_time이 sch_st_time과 sch_ed_time에 모두 저장되는
+        현재 구현에 유의하세요.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                      - true
+                  document:
+                    '$ref': '#/components/schemas/SavedMeetupDocument'
+                  message:
+                    type: string
+                required:
+                  - success
+                  - document
+                  - message
+        '400':
+          '$ref': '#/components/responses/Error400'
+        '404':
+          '$ref': '#/components/responses/Error404'
+        '500':
+          '$ref': '#/components/responses/Error500'
+        '401':
+          '$ref': '#/components/responses/Error401'
+        '403':
+          '$ref': '#/components/responses/Error403'
+      parameters:
+        - name: meetup_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[1-9][0-9]*$'
+            example: '1'
+          description:
+            양의 정수 식별자. member/logbook/review 및 신청 API는 최대 9223372036854775807까지
+            문자열로 처리합니다. 기존 모임 상세/수정은 Number로 변환합니다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              '$ref': '#/components/schemas/UpdateMeetupRequest'
+            example:
+              meetup:
+                title: 변경된 독서 모임
+  '/meetup/{meetup_id}/apply':
+    post:
+      tags:
+        - Meetup
+      operationId: applyMeetup
+      summary: 모임 신청
+      description:
+        member/meetup.controller가 처리합니다. 요청 본문 없이 로그인 사용자로 신청하며 Apply 전체를
+        반환합니다(payment_status 없음). 모집 중이고 마감 전이며 정원이 남아 있어야 합니다. 캡틴의 자기 모임 신청은 400,
+        중복/마감/정원 초과는 409입니다. 별도 승인·결제 없이 ING 상태로 참여합니다.
+      security:
+        - bearerAuth: []
+      responses:
+        '201':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                      - true
+                  document:
+                    '$ref': '#/components/schemas/Apply'
+                required:
+                  - success
+                  - document
+        '400':
+          '$ref': '#/components/responses/Error400'
+        '404':
+          '$ref': '#/components/responses/Error404'
+        '409':
+          '$ref': '#/components/responses/Error409'
+        '500':
+          '$ref': '#/components/responses/Error500'
+        '504':
+          '$ref': '#/components/responses/Error504'
+        '401':
+          '$ref': '#/components/responses/Error401'
+        '403':
+          '$ref': '#/components/responses/Error403'
+      parameters:
+        - name: meetup_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[1-9][0-9]*$'
+            example: '1'
+          description:
+            양의 정수 식별자. member/logbook/review 및 신청 API는 최대 9223372036854775807까지
+            문자열로 처리합니다. 기존 모임 상세/수정은 Number로 변환합니다.
+  '/member/meetups/{meetup_id}/apply':
+    post:
+      tags:
+        - Member
+      operationId: applyMemberMeetup
+      summary: 모임 신청
+      description:
+        member/meetup.controller가 처리합니다. 요청 본문 없이 로그인 사용자로 신청하며 Apply 전체를
+        반환합니다(payment_status 없음). 모집 중이고 마감 전이며 정원이 남아 있어야 합니다. 캡틴의 자기 모임 신청은 400,
+        중복/마감/정원 초과는 409입니다. 별도 승인·결제 없이 ING 상태로 참여합니다.
+      security:
+        - bearerAuth: []
+      responses:
+        '201':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                      - true
+                  document:
+                    '$ref': '#/components/schemas/Apply'
+                required:
+                  - success
+                  - document
+        '400':
+          '$ref': '#/components/responses/Error400'
+        '404':
+          '$ref': '#/components/responses/Error404'
+        '409':
+          '$ref': '#/components/responses/Error409'
+        '500':
+          '$ref': '#/components/responses/Error500'
+        '504':
+          '$ref': '#/components/responses/Error504'
+        '401':
+          '$ref': '#/components/responses/Error401'
+        '403':
+          '$ref': '#/components/responses/Error403'
+      parameters:
+        - name: meetup_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[1-9][0-9]*$'
+            example: '1'
+          description:
+            양의 정수 식별자. member/logbook/review 및 신청 API는 최대 9223372036854775807까지
+            문자열로 처리합니다. 기존 모임 상세/수정은 Number로 변환합니다.
+  '/member/meetups/{meetup_id}/sessions':
+    get:
+      tags:
+        - Member
+      operationId: listMemberSessions
+      summary: 참여 모임의 세션 조회
+      description: 캡틴 또는 해당 모임의 크루만 조회 가능합니다. 회차 오름차순이며 취소 세션도 포함합니다. Zoom 정보는 제외합니다.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                      - true
+                  document:
+                    type: array
+                    items:
+                      '$ref': '#/components/schemas/MemberSession'
+                required:
+                  - success
+                  - document
+        '400':
+          '$ref': '#/components/responses/Error400'
+        '404':
+          '$ref': '#/components/responses/Error404'
+        '500':
+          '$ref': '#/components/responses/Error500'
+        '504':
+          '$ref': '#/components/responses/Error504'
+        '401':
+          '$ref': '#/components/responses/Error401'
+        '403':
+          '$ref': '#/components/responses/Error403'
+      parameters:
+        - name: meetup_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[1-9][0-9]*$'
+            example: '1'
+          description:
+            양의 정수 식별자. member/logbook/review 및 신청 API는 최대 9223372036854775807까지
+            문자열로 처리합니다. 기존 모임 상세/수정은 Number로 변환합니다.
+  '/logbook/meetups/{meetup_id}/sessions/{session_id}/me':
+    get:
+      tags:
+        - Logbook
+      operationId: getMyLogbook
+      summary: 내 세션 로그북 조회
+      description: 해당 모임 크루만 조회합니다. 작성 전이면 document는 null입니다.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                      - true
+                  document:
+                    '$ref': '#/components/schemas/NullableLogbook'
+                required:
+                  - success
+                  - document
+        '400':
+          '$ref': '#/components/responses/Error400'
+        '404':
+          '$ref': '#/components/responses/Error404'
+        '500':
+          '$ref': '#/components/responses/Error500'
+        '504':
+          '$ref': '#/components/responses/Error504'
+        '401':
+          '$ref': '#/components/responses/Error401'
+        '403':
+          '$ref': '#/components/responses/Error403'
+      parameters:
+        - name: meetup_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[1-9][0-9]*$'
+            example: '1'
+          description:
+            양의 정수 식별자. member/logbook/review 및 신청 API는 최대 9223372036854775807까지
+            문자열로 처리합니다. 기존 모임 상세/수정은 Number로 변환합니다.
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[1-9][0-9]*$'
+            example: '1'
+          description:
+            양의 정수 식별자. member/logbook/review 및 신청 API는 최대 9223372036854775807까지
+            문자열로 처리합니다. 기존 모임 상세/수정은 Number로 변환합니다.
+    put:
+      tags:
+        - Logbook
+      operationId: saveMyLogbook
+      summary: 내 세션 로그북 제출 또는 수정
+      description:
+        크루의 Apply와 세션별로 하나만 저장합니다. 최초 제출과 수정 모두 200입니다. content 앞뒤 공백 제거,
+        submitted_at 서버 설정, 수정 시 is_approved=false 초기화. 예정/진행/완료 세션은 허용하며 취소된 세션은
+        409입니다. 별도 초안 저장은 없습니다.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                      - true
+                  document:
+                    '$ref': '#/components/schemas/Logbook'
+                required:
+                  - success
+                  - document
+        '400':
+          '$ref': '#/components/responses/Error400'
+        '404':
+          '$ref': '#/components/responses/Error404'
+        '409':
+          '$ref': '#/components/responses/Error409'
+        '500':
+          '$ref': '#/components/responses/Error500'
+        '504':
+          '$ref': '#/components/responses/Error504'
+        '401':
+          '$ref': '#/components/responses/Error401'
+        '403':
+          '$ref': '#/components/responses/Error403'
+      parameters:
+        - name: meetup_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[1-9][0-9]*$'
+            example: '1'
+          description:
+            양의 정수 식별자. member/logbook/review 및 신청 API는 최대 9223372036854775807까지
+            문자열로 처리합니다. 기존 모임 상세/수정은 Number로 변환합니다.
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[1-9][0-9]*$'
+            example: '1'
+          description:
+            양의 정수 식별자. member/logbook/review 및 신청 API는 최대 9223372036854775807까지
+            문자열로 처리합니다. 기존 모임 상세/수정은 Number로 변환합니다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              '$ref': '#/components/schemas/LogbookRequest'
+  '/logbook/meetups/{meetup_id}/sessions/{session_id}':
+    get:
+      tags:
+        - Logbook
+      operationId: listCaptainLogbooks
+      summary: 캡틴의 세션별 전체 크루 및 로그북 조회
+      description:
+        해당 모임 캡틴만 조회합니다. 삭제되지 않은 Apply를 기준으로 ING/COMPLETED 크루를 모두 포함하며,
+        선택한 세션의 로그북이 없으면 logbook=null입니다. 이름은 name에 반환합니다. total은 로그북 수가 아닌 크루 수이고
+        apply_id 오름차순입니다. nextPage가 있으면 다음 페이지도 조회하세요. 응답 items에서 apply_id 또는 user_id로
+        크루를 선택하여 logbook을 표시할 수 있습니다. 기존 로그북 중심 응답(Apply.User)에서 크루 중심 응답으로 변경되었습니다.
+        실제 세션 출석 여부는 관리하지 않습니다.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                      - true
+                  document:
+                    type: object
+                    properties:
+                      page:
+                        type: integer
+                        minimum: 1
+                      limit:
+                        type: integer
+                        minimum: 1
+                        maximum: 100
+                      total:
+                        type: integer
+                        minimum: 0
+                      nextPage:
+                        type: integer
+                        nullable: true
+                      items:
+                        type: array
+                        items:
+                          '$ref': '#/components/schemas/CaptainLogbook'
+                    required:
+                      - page
+                      - limit
+                      - total
+                      - nextPage
+                      - items
+                required:
+                  - success
+                  - document
+              example:
+                success: true
+                document:
+                  page: 1
+                  limit: 10
+                  total: 2
+                  nextPage:
+                  items:
+                    - apply_id: '10'
+                      user_id: crew01
+                      name: 첫 번째 크루
+                      status: ING
+                      logbook:
+                        logbook_id: '20'
+                        apply_id: '10'
+                        meetup_id: '1'
+                        session_id: '2'
+                        content: 이번 회차 독서 기록입니다.
+                        submitted_at: '2026-09-30T10:00:00Z'
+                        is_approved: false
+                        updated_at: '2026-09-30T10:00:00Z'
+                    - apply_id: '11'
+                      user_id: crew02
+                      name: 두 번째 크루
+                      status: ING
+                      logbook:
+        '400':
+          '$ref': '#/components/responses/Error400'
+        '404':
+          '$ref': '#/components/responses/Error404'
+        '500':
+          '$ref': '#/components/responses/Error500'
+        '504':
+          '$ref': '#/components/responses/Error504'
+        '401':
+          '$ref': '#/components/responses/Error401'
+        '403':
+          '$ref': '#/components/responses/Error403'
+      parameters:
+        - name: meetup_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[1-9][0-9]*$'
+            example: '1'
+          description:
+            양의 정수 식별자. member/logbook/review 및 신청 API는 최대 9223372036854775807까지
+            문자열로 처리합니다. 기존 모임 상세/수정은 Number로 변환합니다.
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[1-9][0-9]*$'
+            example: '1'
+          description:
+            양의 정수 식별자. member/logbook/review 및 신청 API는 최대 9223372036854775807까지
+            문자열로 처리합니다. 기존 모임 상세/수정은 Number로 변환합니다.
+        - name: page
+          in: query
+          description: ''
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000000
+            default: 1
+        - name: limit
+          in: query
+          description: ''
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+  '/review/meetups/{meetup_id}':
+    post:
+      tags:
+        - Review
+      operationId: createReview
+      summary: 종료된 모임의 리뷰 작성
+      description:
+        해당 모임 크루만 작성합니다. Meetup.status가 COMPLETED여야 하며 Apply별 하나의 리뷰만 허용합니다.
+        모임 미종료 또는 이미 작성한 경우 409입니다.
+      security:
+        - bearerAuth: []
+      responses:
+        '201':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                      - true
+                  document:
+                    '$ref': '#/components/schemas/Review'
+                required:
+                  - success
+                  - document
+        '400':
+          '$ref': '#/components/responses/Error400'
+        '404':
+          '$ref': '#/components/responses/Error404'
+        '409':
+          '$ref': '#/components/responses/Error409'
+        '500':
+          '$ref': '#/components/responses/Error500'
+        '504':
+          '$ref': '#/components/responses/Error504'
+        '401':
+          '$ref': '#/components/responses/Error401'
+        '403':
+          '$ref': '#/components/responses/Error403'
+      parameters:
+        - name: meetup_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[1-9][0-9]*$'
+            example: '1'
+          description:
+            양의 정수 식별자. member/logbook/review 및 신청 API는 최대 9223372036854775807까지
+            문자열로 처리합니다. 기존 모임 상세/수정은 Number로 변환합니다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              '$ref': '#/components/schemas/ReviewRequest'
+    get:
+      tags:
+        - Review
+      operationId: listReviews
+      summary: 모임 리뷰 목록
+      description: 해당 모임 캡틴 또는 크루만 조회합니다. apply.User.name이 작성자 이름입니다.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                      - true
+                  document:
+                    type: object
+                    properties:
+                      page:
+                        type: integer
+                        minimum: 1
+                      limit:
+                        type: integer
+                        minimum: 1
+                        maximum: 100
+                      total:
+                        type: integer
+                        minimum: 0
+                      nextPage:
+                        type: integer
+                        nullable: true
+                      items:
+                        type: array
+                        items:
+                          '$ref': '#/components/schemas/ReviewListItem'
+                    required:
+                      - page
+                      - limit
+                      - total
+                      - nextPage
+                      - items
+                required:
+                  - success
+                  - document
+        '400':
+          '$ref': '#/components/responses/Error400'
+        '404':
+          '$ref': '#/components/responses/Error404'
+        '500':
+          '$ref': '#/components/responses/Error500'
+        '504':
+          '$ref': '#/components/responses/Error504'
+        '401':
+          '$ref': '#/components/responses/Error401'
+        '403':
+          '$ref': '#/components/responses/Error403'
+      parameters:
+        - name: meetup_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[1-9][0-9]*$'
+            example: '1'
+          description:
+            양의 정수 식별자. member/logbook/review 및 신청 API는 최대 9223372036854775807까지
+            문자열로 처리합니다. 기존 모임 상세/수정은 Number로 변환합니다.
+        - name: page
+          in: query
+          description: ''
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000000
+            default: 1
+        - name: limit
+          in: query
+          description: ''
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+  '/member/meetups/{meetup_id}/crews':
+    get:
+      tags:
+        - Member
+      operationId: listMeetupCrews
+      summary: 캡틴의 모임 참여 크루 목록
+      description:
+        해당 모임 캡틴만 조회합니다. 삭제되지 않은 Apply를 기준으로 ING/COMPLETED 크루를 모두 반환합니다.
+        apply_id 오름차순이며 비밀번호·이메일은 반환하지 않습니다. 세션별 출석 명단이 아닌 모임 참여자 명단입니다.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                      - true
+                  document:
+                    type: object
+                    properties:
+                      page:
+                        type: integer
+                        minimum: 1
+                      limit:
+                        type: integer
+                        minimum: 1
+                        maximum: 100
+                      total:
+                        type: integer
+                        minimum: 0
+                      nextPage:
+                        type: integer
+                        nullable: true
+                      items:
+                        type: array
+                        items:
+                          '$ref': '#/components/schemas/Crew'
+                    required:
+                      - page
+                      - limit
+                      - total
+                      - nextPage
+                      - items
+                required:
+                  - success
+                  - document
+              example:
+                success: true
+                document:
+                  page: 1
+                  limit: 10
+                  total: 2
+                  nextPage:
+                  items:
+                    - apply_id: '10'
+                      user_id: crew01
+                      name: 첫 번째 크루
+                      status: ING
+                    - apply_id: '11'
+                      user_id: crew02
+                      name: 두 번째 크루
+                      status: ING
+        '400':
+          '$ref': '#/components/responses/Error400'
+        '404':
+          '$ref': '#/components/responses/Error404'
+        '500':
+          '$ref': '#/components/responses/Error500'
+        '504':
+          '$ref': '#/components/responses/Error504'
+        '401':
+          '$ref': '#/components/responses/Error401'
+        '403':
+          '$ref': '#/components/responses/Error403'
+      parameters:
+        - name: meetup_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[1-9][0-9]*$'
+            example: '1'
+          description:
+            양의 정수 식별자. member/logbook/review 및 신청 API는 최대 9223372036854775807까지
+            문자열로 처리합니다. 기존 모임 상세/수정은 Number로 변환합니다.
+        - name: page
+          in: query
+          description: ''
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000000
+            default: 1
+        - name: limit
+          in: query
+          description: ''
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+  '/member/meetups/captain':
+    get:
+      tags:
+        - Member
+      operationId: listCaptainMeetups
+      summary: 마이페이지 — 내가 캡틴인 모임 목록
+      description:
+        로그인 사용자가 leader_id인 모임을 조회합니다. 종료된 모임도 포함합니다. 역할은 경로로 고정되며 role
+        쿼리는 사용하지 않습니다. page와 limit으로 페이지를 지정합니다.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                      - true
+                  document:
+                    type: object
+                    properties:
+                      page:
+                        type: integer
+                        minimum: 1
+                      limit:
+                        type: integer
+                        minimum: 1
+                        maximum: 100
+                      total:
+                        type: integer
+                        minimum: 0
+                      nextPage:
+                        type: integer
+                        nullable: true
+                      items:
+                        type: array
+                        items:
+                          '$ref': '#/components/schemas/MemberMeetup'
+                    required:
+                      - page
+                      - limit
+                      - total
+                      - nextPage
+                      - items
+                required:
+                  - success
+                  - document
+        '400':
+          '$ref': '#/components/responses/Error400'
+        '500':
+          '$ref': '#/components/responses/Error500'
+        '504':
+          '$ref': '#/components/responses/Error504'
+        '401':
+          '$ref': '#/components/responses/Error401'
+        '403':
+          '$ref': '#/components/responses/Error403'
+      parameters:
+        - name: page
+          in: query
+          description: ''
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000000
+            default: 1
+        - name: limit
+          in: query
+          description: ''
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+  '/member/meetups/crew':
+    get:
+      tags:
+        - Member
+      operationId: listCrewMeetups
+      summary: 마이페이지 — 내가 크루인 모임 목록
+      description:
+        로그인 사용자의 삭제되지 않은 Apply가 있는 모임을 조회하며 응답에 Applies 배열을 포함합니다. 종료된
+        모임도 포함합니다. 역할은 경로로 고정되며 role 쿼리는 사용하지 않습니다. page와 limit으로 페이지를 지정합니다.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                      - true
+                  document:
+                    type: object
+                    properties:
+                      page:
+                        type: integer
+                        minimum: 1
+                      limit:
+                        type: integer
+                        minimum: 1
+                        maximum: 100
+                      total:
+                        type: integer
+                        minimum: 0
+                      nextPage:
+                        type: integer
+                        nullable: true
+                      items:
+                        type: array
+                        items:
+                          '$ref': '#/components/schemas/MemberMeetup'
+                    required:
+                      - page
+                      - limit
+                      - total
+                      - nextPage
+                      - items
+                required:
+                  - success
+                  - document
+        '400':
+          '$ref': '#/components/responses/Error400'
+        '500':
+          '$ref': '#/components/responses/Error500'
+        '504':
+          '$ref': '#/components/responses/Error504'
+        '401':
+          '$ref': '#/components/responses/Error401'
+        '403':
+          '$ref': '#/components/responses/Error403'
+      parameters:
+        - name: page
+          in: query
+          description: ''
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000000
+            default: 1
+        - name: limit
+          in: query
+          description: ''
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+  '/member/me':
+    get:
+      tags:
+        - Member
+      operationId: getMyProfile
+      summary: 마이페이지 — 내 회원 정보
+      description:
+        토큰의 user_id로 로그인 사용자의 아이디·이름·이메일을 조회합니다. 비밀번호 등 민감 정보는 조회·반환하지
+        않습니다. 로그인 응답의 document 대신 이 API로 화면에 표시할 회원 정보를 가져옵니다.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                      - true
+                  document:
+                    '$ref': '#/components/schemas/MemberProfile'
+                required:
+                  - success
+                  - document
+        '401':
+          '$ref': '#/components/responses/Error401'
+        '404':
+          '$ref': '#/components/responses/Error404'
+        '500':
+          '$ref': '#/components/responses/Error500'
+        '504':
+          '$ref': '#/components/responses/Error504'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: POST /auth/login에서 반환된 token을 입력합니다.
+  responses:
+    Error400:
+      description: 입력값/DB 검증 실패
+      content:
+        application/json:
+          schema:
+            '$ref': '#/components/schemas/Error'
+    Error401:
+      description: Bearer 인증 헤더 누락, 유효하지 않거나 만료된 토큰, 또는 로그인 사용자 식별자 없음
+      content:
+        application/json:
+          schema:
+            '$ref': '#/components/schemas/Error'
+    Error403:
+      description: 모임 접근 권한 없음 (토큰 오류는 401)
+      content:
+        application/json:
+          schema:
+            '$ref': '#/components/schemas/Error'
+    Error404:
+      description: 대상 리소스 없음
+      content:
+        application/json:
+          schema:
+            '$ref': '#/components/schemas/Error'
+    Error409:
+      description: 중복 데이터 또는 현재 상태에서 처리 불가
+      content:
+        application/json:
+          schema:
+            '$ref': '#/components/schemas/Error'
+    Error500:
+      description: 서버 또는 데이터베이스 오류
+      content:
+        application/json:
+          schema:
+            '$ref': '#/components/schemas/Error'
+    Error504:
+      description: 데이터베이스 쿼리 시간 초과
+      content:
+        application/json:
+          schema:
+            '$ref': '#/components/schemas/Error'
+  schemas:
+    BigId:
+      type: string
+      pattern: '^[1-9][0-9]*$'
+      example: '1'
+      description: PostgreSQL BIGINT 식별자는 JSON 응답에서 문자열로 반환됩니다.
+    MeetupStatus:
+      type: string
+      enum:
+        - RECRUITING
+        - CLOSED
+        - IN_PROGRESS
+        - COMPLETED
+    SessionStatus:
+      type: string
+      enum:
+        - SCHEDULED
+        - IN_PROGRESS
+        - COMPLETED
+        - CANCELLED
+    ApplyStatus:
+      type: string
+      enum:
+        - ING
+        - COMPLETED
+      description: Apply 모델의 실제 상태. Enum.js에 남아 있는 PENDING/APPROVED 등은 사용하지 않습니다.
+    Genre:
+      type: string
+      enum:
+        - NOVEL
+        - ECONOMY_BUSINESS
+        - SELF_DEVELOPMENT
+        - IT
+        - ESSAY
+        - TRAVEL_LIFESTYLE
+        - PARENT_CHILD
+        - HUMANITIES_PHILOSOPHY
+        - SOCIETY
+        - SCIENCE
+        - HISTORY
+        - ETC
+      nullable: true
+    ReadingAmount:
+      type: string
+      enum:
+        - BOOKS_1_2
+        - BOOKS_3_4
+        - BOOKS_5_6
+        - BOOKS_7_PLUS
+    Meetup:
+      type: object
+      properties:
+        meetup_id:
+          '$ref': '#/components/schemas/BigId'
+        leader_id:
+          type: string
+        title:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+        book_title:
+          type: string
+          maxLength: 150
+        book_image_url:
+          type: string
+          maxLength: 512
+          nullable: true
+        price:
+          type: integer
+          minimum: 0
+        min_capacity:
+          type: integer
+          minimum: 1
+        max_capacity:
+          type: integer
+        deadline:
+          type: string
+          format: date-time
+        status:
+          '$ref': '#/components/schemas/MeetupStatus'
+        created_user_id:
+          type: string
+        updated_user_id:
+          type: string
+        deleted_user_id:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+    MemberMeetup:
+      type: object
+      properties:
+        meetup_id:
+          '$ref': '#/components/schemas/BigId'
+        leader_id:
+          type: string
+        title:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+        book_title:
+          type: string
+          maxLength: 150
+        book_image_url:
+          type: string
+          maxLength: 512
+          nullable: true
+        price:
+          type: integer
+          minimum: 0
+        min_capacity:
+          type: integer
+          minimum: 1
+        max_capacity:
+          type: integer
+        deadline:
+          type: string
+          format: date-time
+        status:
+          '$ref': '#/components/schemas/MeetupStatus'
+        created_user_id:
+          type: string
+        updated_user_id:
+          type: string
+        deleted_user_id:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+        Applies:
+          type: array
+          items:
+            type: object
+            properties:
+              apply_id:
+                '$ref': '#/components/schemas/BigId'
+              status:
+                '$ref': '#/components/schemas/ApplyStatus'
+          description: role=crew일 때만 포함됩니다.
+    MemberSession:
+      type: object
+      properties:
+        session_id:
+          '$ref': '#/components/schemas/BigId'
+        meetup_id:
+          '$ref': '#/components/schemas/BigId'
+        session_number:
+          type: integer
+          minimum: 1
+        topic:
+          type: string
+          maxLength: 200
+        sch_date:
+          type: string
+          example: '2026-11-07'
+        sch_day:
+          type: string
+          maxLength: 10
+          example: 토요일
+        sch_time:
+          type: string
+          example: '19:00'
+        sch_st_time:
+          type: string
+          example: '19:00'
+        sch_ed_time:
+          type: string
+          example: '21:00'
+        status:
+          '$ref': '#/components/schemas/SessionStatus'
+    PublicSession:
+      type: object
+      properties:
+        session_id:
+          '$ref': '#/components/schemas/BigId'
+        session_number:
+          type: integer
+          minimum: 1
+        topic:
+          type: string
+          maxLength: 200
+        sch_date:
+          type: string
+          example: '2026-11-07'
+        sch_day:
+          type: string
+          maxLength: 10
+          example: 토요일
+        sch_time:
+          type: string
+          example: '19:00'
+        sch_st_time:
+          type: string
+          example: '19:00'
+        sch_ed_time:
+          type: string
+          example: '21:00'
+        status:
+          '$ref': '#/components/schemas/SessionStatus'
+    SavedSession:
+      type: object
+      properties:
+        session_id:
+          '$ref': '#/components/schemas/BigId'
+        meetup_id:
+          '$ref': '#/components/schemas/BigId'
+        session_number:
+          type: integer
+          minimum: 1
+        topic:
+          type: string
+          maxLength: 200
+        sch_date:
+          type: string
+          example: '2026-11-07'
+        sch_day:
+          type: string
+          maxLength: 10
+          example: 토요일
+        sch_time:
+          type: string
+          example: '19:00'
+        zoom_url:
+          type: string
+          nullable: true
+          maxLength: 512
+        zoom_password:
+          type: string
+          nullable: true
+          maxLength: 50
+        status:
+          '$ref': '#/components/schemas/SessionStatus'
+    SavedMeetupDocument:
+      type: object
+      properties:
+        meetup:
+          type: object
+          properties:
+            meetup_id:
+              '$ref': '#/components/schemas/BigId'
+            leader_id:
+              type: string
+            title:
+              type: string
+              maxLength: 100
+            description:
+              type: string
+            book_title:
+              type: string
+              maxLength: 150
+            book_image_url:
+              type: string
+              maxLength: 512
+              nullable: true
+            price:
+              type: integer
+              minimum: 0
+            min_capacity:
+              type: integer
+              minimum: 1
+            max_capacity:
+              type: integer
+            deadline:
+              type: string
+              format: date-time
+            status:
+              '$ref': '#/components/schemas/MeetupStatus'
+            created_at:
+              type: string
+              format: date-time
+        sessions:
+          type: array
+          items:
+            '$ref': '#/components/schemas/SavedSession'
+      required:
+        - meetup
+        - sessions
+    MeetupListItem:
+      type: object
+      properties:
+        meetup_id:
+          '$ref': '#/components/schemas/BigId'
+        title:
+          type: string
+          maxLength: 100
+        book_title:
+          type: string
+          maxLength: 150
+        book_image_url:
+          type: string
+          maxLength: 512
+          nullable: true
+        description:
+          type: string
+        min_capacity:
+          type: integer
+          minimum: 1
+        max_capacity:
+          type: integer
+        deadline:
+          type: string
+          format: date-time
+        status:
+          '$ref': '#/components/schemas/MeetupStatus'
+        leader_name:
+          type: string
+          nullable: true
+        sch_st_date:
+          type: string
+          nullable: true
+        sch_ed_date:
+          type: string
+          nullable: true
+        sch_day:
+          type: string
+          nullable: true
+        sch_time:
+          type: string
+          nullable: true
+    MeetupDetail:
+      type: object
+      properties:
+        meetup:
+          type: object
+          properties:
+            meetup_id:
+              '$ref': '#/components/schemas/BigId'
+            leader_id:
+              type: string
+            title:
+              type: string
+              maxLength: 100
+            description:
+              type: string
+            book_title:
+              type: string
+              maxLength: 150
+            book_image_url:
+              type: string
+              maxLength: 512
+              nullable: true
+            price:
+              type: integer
+              minimum: 0
+            min_capacity:
+              type: integer
+              minimum: 1
+            max_capacity:
+              type: integer
+            deadline:
+              type: string
+              format: date-time
+            status:
+              '$ref': '#/components/schemas/MeetupStatus'
+            leader_name:
+              type: string
+              nullable: true
+        sessions:
+          type: array
+          items:
+            '$ref': '#/components/schemas/PublicSession'
+        apply_count:
+          type: integer
+          minimum: 0
+        apply_user_stats:
+          type: object
+          properties:
+            genre_1:
+              type: object
+              additionalProperties:
+                type: integer
+                minimum: 0
+            genre_2:
+              type: object
+              additionalProperties:
+                type: integer
+                minimum: 0
+            monthly_reading_volume:
+              type: object
+              additionalProperties:
+                type: integer
+                minimum: 0
+            age_group:
+              type: object
+              additionalProperties:
+                type: integer
+                minimum: 0
+            gender:
+              type: object
+              additionalProperties:
+                type: integer
+                minimum: 0
+    Apply:
+      type: object
+      properties:
+        apply_id:
+          '$ref': '#/components/schemas/BigId'
+        meetup_id:
+          '$ref': '#/components/schemas/BigId'
+        user_id:
+          type: string
+        status:
+          '$ref': '#/components/schemas/ApplyStatus'
+        created_user_id:
+          type: string
+        updated_user_id:
+          type: string
+        deleted_user_id:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+    Logbook:
+      type: object
+      properties:
+        logbook_id:
+          '$ref': '#/components/schemas/BigId'
+        meetup_id:
+          '$ref': '#/components/schemas/BigId'
+        session_id:
+          '$ref': '#/components/schemas/BigId'
+        apply_id:
+          '$ref': '#/components/schemas/BigId'
+        content:
+          type: string
+          nullable: true
+        submitted_at:
+          type: string
+          format: date-time
+          nullable: true
+        is_approved:
+          type: boolean
+        created_user_id:
+          type: string
+        updated_user_id:
+          type: string
+        deleted_user_id:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+    NullableLogbook:
+      type: object
+      properties:
+        logbook_id:
+          '$ref': '#/components/schemas/BigId'
+        meetup_id:
+          '$ref': '#/components/schemas/BigId'
+        session_id:
+          '$ref': '#/components/schemas/BigId'
+        apply_id:
+          '$ref': '#/components/schemas/BigId'
+        content:
+          type: string
+          nullable: true
+        submitted_at:
+          type: string
+          format: date-time
+          nullable: true
+        is_approved:
+          type: boolean
+        created_user_id:
+          type: string
+        updated_user_id:
+          type: string
+        deleted_user_id:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+      nullable: true
+      description: 아직 작성하지 않은 경우 null입니다.
+    CaptainLogbook:
+      type: object
+      required:
+        - apply_id
+        - user_id
+        - name
+        - status
+        - logbook
+      properties:
+        apply_id:
+          '$ref': '#/components/schemas/BigId'
+        user_id:
+          type: string
+        name:
+          type: string
+          nullable: true
+          description: 삭제된 회원 등 사용자 정보를 조회할 수 없으면 null
+        status:
+          '$ref': '#/components/schemas/ApplyStatus'
+        logbook:
+          type: object
+          properties:
+            logbook_id:
+              '$ref': '#/components/schemas/BigId'
+            meetup_id:
+              '$ref': '#/components/schemas/BigId'
+            session_id:
+              '$ref': '#/components/schemas/BigId'
+            apply_id:
+              '$ref': '#/components/schemas/BigId'
+            content:
+              type: string
+              nullable: true
+            submitted_at:
+              type: string
+              format: date-time
+              nullable: true
+            is_approved:
+              type: boolean
+            updated_at:
+              type: string
+              format: date-time
+          nullable: true
+          description: 해당 크루가 선택한 세션에 작성한 로그북. 미제출이면 null입니다.
+      description: 모임 신청자 한 명과 선택한 세션의 로그북. 세션별 실제 출석을 의미하지 않습니다.
+    Review:
+      type: object
+      properties:
+        review_id:
+          '$ref': '#/components/schemas/BigId'
+        apply_id:
+          '$ref': '#/components/schemas/BigId'
+        content:
+          type: string
+          nullable: true
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+          nullable: true
+        reviewed_at:
+          type: string
+          format: date-time
+        created_user_id:
+          type: string
+        updated_user_id:
+          type: string
+        deleted_user_id:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+    ReviewListItem:
+      type: object
+      properties:
+        review_id:
+          '$ref': '#/components/schemas/BigId'
+        apply_id:
+          '$ref': '#/components/schemas/BigId'
+        content:
+          type: string
+          nullable: true
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+          nullable: true
+        reviewed_at:
+          type: string
+          format: date-time
+        apply:
+          type: object
+          properties:
+            user_id:
+              type: string
+            User:
+              type: object
+              properties:
+                name:
+                  type: string
+              nullable: true
+    LoginUser:
+      type: object
+      properties:
+        user_id:
+          type: string
+          maxLength: 100
+        name:
+          type: string
+          maxLength: 50
+        email:
+          type: string
+          maxLength: 100
+        genre_1:
+          '$ref': '#/components/schemas/Genre'
+        genre_2:
+          '$ref': '#/components/schemas/Genre'
+        monthly_reading_volume:
+          '$ref': '#/components/schemas/ReadingAmount'
+        age_group:
+          type: string
+          maxLength: 100
+        gender:
+          type: string
+          enum:
+            - M
+            - F
+    SignupRequest:
+      type: object
+      properties:
+        user_id:
+          type: string
+          pattern: '^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{4,10}$'
+          description: 영문과 숫자를 포함한 4~10자
+        name:
+          type: string
+          maxLength: 50
+        email:
+          type: string
+          format: email
+          maxLength: 100
+        gender:
+          type: string
+          enum:
+            - M
+            - F
+        age_group:
+          type: string
+          enum:
+            - 10대
+            - 20대
+            - 30대
+            - 40대
+            - 50대
+            - 60대 이상
+        password:
+          type: string
+          minLength: 8
+          maxLength: 64
+          description: 영문과 숫자를 포함한 8자 이상
+        readingAmount:
+          '$ref': '#/components/schemas/ReadingAmount'
+        genres:
+          type: array
+          items:
+            '$ref': '#/components/schemas/Genre'
+          maxItems: 2
+          uniqueItems: true
+          description: 배열은 필수입니다. 첫 두 항목을 genre_1/genre_2에 저장하며 빈 배열도 허용합니다.
+      required:
+        - user_id
+        - password
+        - name
+        - email
+        - gender
+        - age_group
+        - readingAmount
+        - genres
+    LoginRequest:
+      type: object
+      properties:
+        user_id:
+          type: string
+        password:
+          type: string
+      required:
+        - user_id
+        - password
+    UpdateMyInfoRequest:
+      type: object
+      description: 보낸 필드만 수정합니다. 최소 1개 필드가 필요합니다.
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 100
+        name:
+          type: string
+          maxLength: 50
+        gender:
+          type: string
+          enum:
+            - M
+            - F
+        age_group:
+          type: string
+          enum:
+            - 10대
+            - 20대
+            - 30대
+            - 40대
+            - 50대
+            - 60대 이상
+        readingAmount:
+          '$ref': '#/components/schemas/ReadingAmount'
+        genres:
+          type: array
+          items:
+            '$ref': '#/components/schemas/Genre'
+          maxItems: 2
+          uniqueItems: true
+        new_password:
+          type: string
+          minLength: 8
+          maxLength: 64
+        current_password:
+          type: string
+          description: new_password를 보낼 때 필수
+    CreateSessionRequest:
+      type: object
+      properties:
+        session_number:
+          type: integer
+          minimum: 1
+        topic:
+          type: string
+          maxLength: 200
+        sch_date:
+          type: string
+          example: '2026-11-07'
+        sch_day:
+          type: string
+          maxLength: 10
+          example: 토요일
+        sch_time:
+          type: string
+          example: '19:00'
+        sch_st_time:
+          type: string
+          example: '19:00'
+        sch_ed_time:
+          type: string
+          example: '21:00'
+        zoom_url:
+          type: string
+          nullable: true
+          maxLength: 512
+        zoom_password:
+          type: string
+          nullable: true
+          maxLength: 50
+      required:
+        - session_number
+        - topic
+        - sch_date
+        - sch_day
+        - sch_time
+        - sch_st_time
+        - sch_ed_time
+    CreateMeetupRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 100
+          minLength: 1
+        description:
+          type: string
+          minLength: 1
+        book_title:
+          type: string
+          maxLength: 150
+          minLength: 1
+        book_image_url:
+          type: string
+          maxLength: 512
+          nullable: true
+        price:
+          type: integer
+          minimum: 0
+        min_capacity:
+          type: integer
+          minimum: 4
+          maximum: 8
+        max_capacity:
+          type: integer
+          minimum: 4
+          maximum: 8
+        deadline:
+          type: string
+          format: date-time
+        sessions:
+          type: array
+          items:
+            '$ref': '#/components/schemas/CreateSessionRequest'
+          minItems: 4
+          maxItems: 4
+      description: min_capacity <= max_capacity, deadline은 현재 이후, session_number는
+        중복 불가. leader_id는 JWT에서 결정합니다.
+      required:
+        - title
+        - description
+        - book_title
+        - price
+        - min_capacity
+        - max_capacity
+        - deadline
+        - sessions
+    UpdateSessionRequest:
+      type: object
+      properties:
+        session_number:
+          type: integer
+          minimum: 1
+        topic:
+          type: string
+          maxLength: 200
+        sch_date:
+          type: string
+          example: '2026-11-07'
+        sch_day:
+          type: string
+          maxLength: 10
+          example: 토요일
+        sch_time:
+          type: string
+          example: '19:00'
+        sch_st_time:
+          type: string
+          example: '19:00'
+        sch_ed_time:
+          type: string
+          example: '21:00'
+        zoom_url:
+          type: string
+          nullable: true
+          maxLength: 512
+        zoom_password:
+          type: string
+          nullable: true
+          maxLength: 50
+        session_id:
+          type: integer
+          minimum: 1
+        meetup_id:
+          type: integer
+          minimum: 1
+      description:
+        세션 수정에도 일정 필드 전체를 검증합니다. sch_st_time/sch_ed_time은 입력을 직접 저장하지 않고
+        sch_time 값으로 둘 다 덮어씁니다. session_id는 숫자로 전달합니다.
+      required:
+        - session_id
+        - session_number
+        - topic
+        - sch_date
+        - sch_day
+        - sch_time
+        - sch_st_time
+        - sch_ed_time
+    UpdateMeetupRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+        book_title:
+          type: string
+          maxLength: 150
+        book_image_url:
+          type: string
+          maxLength: 512
+          nullable: true
+        price:
+          type: integer
+          minimum: 0
+        min_capacity:
+          type: integer
+          minimum: 1
+        max_capacity:
+          type: integer
+        deadline:
+          type: string
+          format: date-time
+        meetup_id:
+          type: integer
+          minimum: 1
+        meetup:
+          type: object
+          properties:
+            title:
+              type: string
+              maxLength: 100
+            description:
+              type: string
+            book_title:
+              type: string
+              maxLength: 150
+            book_image_url:
+              type: string
+              maxLength: 512
+              nullable: true
+            price:
+              type: integer
+              minimum: 0
+            min_capacity:
+              type: integer
+              minimum: 1
+            max_capacity:
+              type: integer
+            deadline:
+              type: string
+              format: date-time
+          description: 있으면 최상위 모임 필드 대신 이 객체를 사용합니다.
+        sessions:
+          type: array
+          items:
+            '$ref': '#/components/schemas/UpdateSessionRequest'
+      description:
+        모임 필드는 부분 수정 가능. status/leader_id 변경은 지원하지 않습니다. sessions는 반드시
+        최상위에 전달합니다.
+    LogbookRequest:
+      type: object
+      properties:
+        content:
+          type: string
+          minLength: 1
+          pattern: "\\S"
+          example: 이번 회차에서 인상 깊었던 내용을 정리했습니다.
+      required:
+        - content
+    ReviewRequest:
+      type: object
+      properties:
+        content:
+          type: string
+          minLength: 1
+          pattern: "\\S"
+          example: 함께 읽고 이야기해서 좋았습니다.
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+          example: 5
+      required:
+        - content
+        - rating
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          enum:
+            - false
+        message:
+          type: string
+        errors:
+          type: array
+          items:
+            type: string
+      description: 직접 처리하는 오류에는 success=false가 포함됩니다. 공통 errorHandler는 message만 반환합니다.
+      required:
+        - message
+    CheckUserIdRequest:
+      type: object
+      properties:
+        user_id:
+          type: string
+      required:
+        - user_id
+    Crew:
+      type: object
+      required:
+        - apply_id
+        - user_id
+        - name
+        - status
+      properties:
+        apply_id:
+          '$ref': '#/components/schemas/BigId'
+        user_id:
+          type: string
+        name:
+          type: string
+          nullable: true
+          description: 삭제된 회원 등 사용자 정보를 조회할 수 없으면 null
+        status:
+          '$ref': '#/components/schemas/ApplyStatus'
+    MemberProfile:
+      type: object
+      properties:
+        user_id:
+          type: string
+        name:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+      required:
+        - user_id
+        - name
+        - email
+x-unmounted-routes:
+  source: src/modules/session/session.routes.js
+  description: app.js에 마운트되지 않았으므로 공개 API 주소가 정해져 있지 않습니다. 아래 경로는 라우터 내부 상대 경로입니다.
+  routes:
+    - method: POST
+      relativePath: '/zoom-mail'
+      description: 승인된 로그북 대상 Zoom 안내 메일 발송. mailer 서비스 누락.
+    - method: POST
+      relativePath: '/close'
+      description: 오늘 이전의 SCHEDULED 세션을 COMPLETED로 변경.
+    - method: POST
+      relativePath: '/logbook-mail'
+      description: 안내 대상만 조회하며 실제 메일 발송 구현은 없음.

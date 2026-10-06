@@ -1,0 +1,32 @@
+# # PostgreSQL 실행
+# docker compose up -d
+
+# # 상태 확인
+# docker compose ps
+
+# # 로그 확인
+# docker compose logs db
+
+# # PostgreSQL 종료
+# docker compose down
+
+name: share-story
+
+services:
+  db:
+    image: postgres:17
+    container_name: sharestory-postgres
+
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: sharestory
+      POSTGRES_DB: sharestory
+
+    ports:
+      - '5432:5432'
+
+    volumes:
+      - sharestory-postgres-data:/var/lib/postgresql/data
+
+volumes:
+  sharestory-postgres-data:

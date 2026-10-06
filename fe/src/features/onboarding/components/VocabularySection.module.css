@@ -1,0 +1,72 @@
+.section {
+  padding: 4rem 0;
+
+  background-color: var(--color-navy);
+}
+
+.inner {
+  width: 100%;
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.eyebrow {
+  margin: 0 0 1.5rem;
+
+  color: var(--color-ocean);
+
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.card {
+  padding: 1.25rem;
+
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 0.75rem;
+}
+
+.icon {
+  margin-bottom: 0.5rem;
+
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.word {
+  margin: 0;
+
+  color: var(--color-canvas);
+
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.definition {
+  margin: 0.25rem 0 0;
+
+  color: var(--color-ocean);
+
+  font-size: 0.875rem;
+}
+
+@media (min-width: 640px) {
+  .inner {
+    padding: 0 1.5rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}

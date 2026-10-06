@@ -1,0 +1,29 @@
+# Server
+PORT=3000
+NODE_ENV=development
+
+# Database (PostgreSQL)
+DB_HOST=127.0.0.1
+DB_PORT=5432
+DB_DATABASE=sharestory
+DB_USERNAME=postgres
+DB_PASSWORD=0000
+
+# Auth
+JWT_SECRET=change-me
+# 토큰 만료 (기본 1d = 하루)
+JWT_EXPIRES_IN=1d
+# 키 이름 SALT_ROUND → SALT_ROUNDS (auth.service.js와 일치)
+SALT_ROUNDS=10
+
+# Mail (SMTP)
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=mailer@example.com
+SMTP_PASS=change-me
+MAIL_FROM=Share Story <no-reply@example.com>
+
+# Mail retry policy
+MAIL_SEND_MAX_RETRIES=2
+MAIL_SEND_RETRY_DELAY_MS=800
