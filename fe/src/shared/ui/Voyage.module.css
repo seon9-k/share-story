@@ -22,7 +22,7 @@
   font: inherit;
 }
 .tabs button[aria-pressed='true'] {
-  background: var(--color-navy);
+  background: var(--color-orange);
   color: white;
 }
 .grid {
