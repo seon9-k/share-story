@@ -1,7 +1,7 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { Op } = require('sequelize');
-const { User } = require('../../models');
+const { User, Meetup, Apply, sequelize } = require('../../models');
 
 /**
  * [Service]
@@ -130,4 +130,39 @@ const updateMyInfo = async (userId, body) => {
   return toPublicUser(user);
 };
 
-module.exports = { isUserIdTaken, signUp, login, updateMyInfo, toPublicUser };
+// 끝나지 않은 모임 (모집 중·모집 마감·항해 중)
+const ACTIVE_MEETUP = { status: { [Op.ne]: 'COMPLETED' } };
+
+// 회원탈퇴 (soft delete)
+// - 비밀번호 재확인 (토큰 탈취 대비)
+// - 끝나지 않은 모임의 캡틴·크루는 탈퇴 불가 (모임·참여 데이터는 건드리지 않음)
+// - 작성한 로그북·리뷰는 모임 기록으로 남기고, 화면에선 '탈퇴한 회원'으로 표시
+// - 아이디는 재사용 불가(isUserIdTaken이 탈퇴 회원 포함), 이메일은 재가입 가능
+const withdraw = async (userId, password) =>
+  sequelize.transaction(async (transaction) => {
+    const user = await User.findByPk(userId, { transaction });
+    if (!user) fail(404, '존재하지 않는 사용자입니다.');
+
+    // 401이면 FE가 토큰 만료로 보고 로그아웃하므로 400 사용
+    const matched = user.password ? await bcrypt.compare(password, user.password) : false;
+    if (!matched) fail(400, '비밀번호가 올바르지 않습니다.');
+
+    const leading = await Meetup.count({
+      where: { leader_id: userId, ...ACTIVE_MEETUP },
+      transaction,
+    });
+    if (leading > 0) fail(409, '캡틴으로 운영 중인 모임이 끝난 뒤 탈퇴할 수 있습니다.');
+
+    const joined = await Apply.count({
+      where: { user_id: userId },
+      include: [{ model: Meetup, where: ACTIVE_MEETUP, required: true, attributes: [] }],
+      transaction,
+    });
+    if (joined > 0) fail(409, '참여 중인 모임이 끝난 뒤 탈퇴할 수 있습니다.');
+
+    // 삭제자 기록 후 deleted_at 설정. 이후 로그인 불가(findOne이 탈퇴 회원 제외)
+    await user.update({ deleted_user_id: userId, updated_user_id: userId }, { transaction });
+    await user.destroy({ transaction });
+  });
+
+module.exports = { isUserIdTaken, signUp, login, updateMyInfo, withdraw, toPublicUser };

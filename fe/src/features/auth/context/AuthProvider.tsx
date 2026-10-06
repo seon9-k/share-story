@@ -65,6 +65,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(data.document);
       },
       logout,
+      withdraw: async (password) => {
+        await api.withdraw(password);
+      },
     }),
     [user, logout],
   );
