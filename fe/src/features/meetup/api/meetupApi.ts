@@ -2,13 +2,14 @@ import type { CreateMeetupPayload } from '../types/meetupForm';
 import type { Meetup } from '../types/meetup';
 import type { MeetupDetail } from '../types/meetupDetail';
 import type { MeetupListItem } from '../types/meetupList';
-import { getToken } from '../../../shared/api/client';
+import { ApiError, request } from '../../../shared/api/client';
 import {
   mapMeetupDetailToDetail,
   mapMeetupDetailToListItem,
   mapMeetupListApiItem,
 } from '../lib/meetupMapper';
 
+// 업로드 응답의 상대 경로(/files/...)를 절대 URL로 바꿀 때만 사용함. 요청 주소는 공통 request()가 결정함
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000').replace(
   /\/$/,
   '',
@@ -100,12 +101,42 @@ const stringifyErrorItem = (item: unknown) => {
   return String(item);
 };
 
-const extractErrorMessage = (payload: any, fallback: string) => {
+const extractErrorMessage = (
+  payload: { message?: string; errors?: unknown[] } | null,
+  fallback: string,
+) => {
   const baseMessage = payload?.message || fallback;
   if (!Array.isArray(payload?.errors) || payload.errors.length === 0) return baseMessage;
   const details = payload.errors.map((item: unknown) => stringifyErrorItem(item)).join(', ');
   return `${baseMessage} (${details})`;
 };
+
+/*
+ * 모든 모임 API를 공통 request()로 호출함.
+ * - 토큰 첨부와 401 처리(토큰 삭제 + 로그아웃 핸들러)를 공통 클라이언트에 맡김.
+ *   예전엔 fetch를 직접 써서 토큰이 만료되어도 로그인 상태가 유지됐음
+ * - 오류 메시지는 기존처럼 서버 message에 errors 상세를 덧붙이고, 없으면 fallback을 사용함
+ * - 상태 코드는 ApiError로 그대로 전달해 호출부가 401·404를 구분할 수 있게 함
+ */
+async function call<T>(path: string, options: RequestInit, fallback: string): Promise<T> {
+  try {
+    return await request<T>(path, options);
+  } catch (error) {
+    if (error instanceof ApiError) {
+      const message = extractErrorMessage(
+        { message: error.serverMessage, errors: error.errors },
+        fallback,
+      );
+      throw new ApiError(message, error.status);
+    }
+    throw error;
+  }
+}
+
+const jsonBody = (method: string, body: unknown): RequestInit => ({
+  method,
+  body: JSON.stringify(body),
+});
 
 export async function uploadBookImage(
   file: File,
@@ -115,24 +146,11 @@ export async function uploadBookImage(
   formData.append('image', file);
   if (userId) formData.append('user_id', userId);
 
-  const token = getToken();
-  const response = await fetch(`${API_BASE_URL}/meetup/book-image`, {
-    method: 'POST',
-    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-    body: formData,
-  });
-
-  const raw = await response.text();
-  let data: any = null;
-  try {
-    data = raw ? JSON.parse(raw) : null;
-  } catch {
-    data = null;
-  }
-
-  if (!response.ok || data?.success === false) {
-    throw new Error(extractErrorMessage(data, '이미지 업로드에 실패했습니다.'));
-  }
+  const data = await call<{ document: { filename: string; url: string } }>(
+    '/meetup/book-image',
+    { method: 'POST', body: formData },
+    '이미지 업로드에 실패했습니다.',
+  );
 
   // 이전 상대 경로 응답과 Blob 절대 URL 응답을 모두 지원
   return {
@@ -142,29 +160,12 @@ export async function uploadBookImage(
 }
 
 export async function createMeetup(payload: CreateMeetupPayload) {
-  const token = getToken();
-  const response = await fetch(`${API_BASE_URL}/meetup`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    body: JSON.stringify(payload),
-  });
-
-  const raw = await response.text();
-  let data: any = null;
-  try {
-    data = raw ? JSON.parse(raw) : null;
-  } catch {
-    data = null;
-  }
-
-  if (!response.ok || data?.success === false) {
-    throw new Error(extractErrorMessage(data, '모임 개설에 실패했습니다.'));
-  }
-
-  return data?.document;
+  const data = await call<{ document?: unknown }>(
+    '/meetup',
+    jsonBody('POST', payload),
+    '모임 개설에 실패했습니다.',
+  );
+  return data.document;
 }
 
 export async function getMeetups(keyword?: string) {
@@ -173,43 +174,29 @@ export async function getMeetups(keyword?: string) {
     query.set('keyword', keyword.trim());
   }
 
-  const url = `${API_BASE_URL}/meetup${query.toString() ? `?${query.toString()}` : ''}`;
-  const response = await fetch(url, { method: 'GET' });
-  const raw = await response.text();
-
-  let data: MeetupListApiResponse | null = null;
-  try {
-    data = raw ? (JSON.parse(raw) as MeetupListApiResponse) : null;
-  } catch {
-    data = null;
-  }
-
-  if (!response.ok || data?.success === false) {
-    throw new Error(extractErrorMessage(data, '모임 목록 조회에 실패했습니다.'));
-  }
-
-  return data?.document?.items || [];
+  const data = await call<MeetupListApiResponse>(
+    `/meetup${query.toString() ? `?${query.toString()}` : ''}`,
+    { method: 'GET' },
+    '모임 목록 조회에 실패했습니다.',
+  );
+  return data.document?.items || [];
 }
 
 export async function getMeetupDetailApi(
   meetupId: number,
 ): Promise<MeetupDetailApiResponse | undefined> {
-  const response = await fetch(`${API_BASE_URL}/meetup/${meetupId}`, { method: 'GET' });
-  const raw = await response.text();
-
-  let data: MeetupDetailApiEnvelope | null = null;
   try {
-    data = raw ? (JSON.parse(raw) as MeetupDetailApiEnvelope) : null;
-  } catch {
-    data = null;
+    const data = await call<MeetupDetailApiEnvelope>(
+      `/meetup/${meetupId}`,
+      { method: 'GET' },
+      '모임 상세 조회에 실패했습니다.',
+    );
+    return data.document;
+  } catch (error) {
+    // 없는 모임은 오류가 아니라 "없음"으로 처리
+    if (error instanceof ApiError && error.status === 404) return undefined;
+    throw error;
   }
-
-  if (response.status === 404) return undefined;
-  if (!response.ok || data?.success === false) {
-    throw new Error(extractErrorMessage(data, '모임 상세 조회에 실패했습니다.'));
-  }
-
-  return data?.document;
 }
 
 export async function getMeetup(id: number): Promise<MeetupListItem | undefined> {
@@ -242,29 +229,12 @@ export async function fetchMeetupSectionItems(): Promise<Meetup[]> {
 }
 
 export async function applyMeetup(meetupId: number, userId: string) {
-  const token = getToken();
-  const response = await fetch(`${API_BASE_URL}/meetup/${meetupId}/apply`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    body: JSON.stringify({ user_id: userId, meetup_id: meetupId }),
-  });
-
-  const raw = await response.text();
-  let data: MeetupApplyApiEnvelope | null = null;
-  try {
-    data = raw ? (JSON.parse(raw) as MeetupApplyApiEnvelope) : null;
-  } catch {
-    data = null;
-  }
-
-  if (!response.ok || data?.success === false) {
-    throw new Error(extractErrorMessage(data, '모임 가입 신청에 실패했습니다.'));
-  }
-
-  return data?.document;
+  const data = await call<MeetupApplyApiEnvelope>(
+    `/meetup/${meetupId}/apply`,
+    jsonBody('POST', { user_id: userId, meetup_id: meetupId }),
+    '모임 가입 신청에 실패했습니다.',
+  );
+  return data.document;
 }
 
 export async function updateMeetup(
@@ -289,14 +259,9 @@ export async function updateMeetup(
     }>;
   },
 ) {
-  const token = getToken();
-  const response = await fetch(`${API_BASE_URL}/meetup/${meetupId}`, {
-    method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    body: JSON.stringify({
+  const data = await call<{ document?: unknown }>(
+    `/meetup/${meetupId}`,
+    jsonBody('PATCH', {
       user_id: params.userId,
       title: params.title,
       description: params.description,
@@ -304,19 +269,7 @@ export async function updateMeetup(
       ...(params.price !== undefined ? { price: params.price } : {}),
       ...(params.sessions !== undefined ? { sessions: params.sessions } : {}),
     }),
-  });
-
-  const raw = await response.text();
-  let data: any = null;
-  try {
-    data = raw ? JSON.parse(raw) : null;
-  } catch {
-    data = null;
-  }
-
-  if (!response.ok || data?.success === false) {
-    throw new Error(extractErrorMessage(data, '모임 수정에 실패했습니다.'));
-  }
-
-  return data?.document;
+    '모임 수정에 실패했습니다.',
+  );
+  return data.document;
 }

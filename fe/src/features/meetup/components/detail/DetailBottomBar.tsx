@@ -27,7 +27,7 @@ function DetailBottomBar({ meetupId, canEdit, onJoin, isJoining = false }: Detai
           </button>
         )}
 
-        {/* leader_id 로그인 사용자는 본인 항해에 참여 신청할 수 없으므로 버튼을 비활성화한다(숨기지 않음). */}
+        {/* leader_id 로그인 사용자는 본인 항해에 참여 신청할 수 없으므로 버튼을 비활성화함(숨기지 않음). */}
         <button
           type="button"
           className={styles.joinButton}

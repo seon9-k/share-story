@@ -114,7 +114,7 @@ export function mapMeetupDetailToDetail(detail: MeetupDetailApiResponse): Meetup
       .slice()
       .sort((left, right) => left.session_number - right.session_number)
       .map((session) => ({
-        // BIGINT 컬럼은 pg 드라이버가 문자열로 반환하므로 명시적으로 숫자 변환한다.
+        // BIGINT 컬럼은 pg 드라이버가 문자열로 반환하므로 명시적으로 숫자 변환함.
         sessionId: Number(session.session_id),
         number: session.session_number,
         date: toMonthDay(session.sch_date),
