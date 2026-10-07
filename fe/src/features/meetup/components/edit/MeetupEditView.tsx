@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getMeetupDetail, updateMeetup } from '../../api/meetupApi';
+import { getMeetupDetail, updateMeetup, uploadBookImage } from '../../api/meetupApi';
 import { toKoreanDay, addHoursToTime } from '../../lib/meetupMapper';
 import { getCurrentUserId } from '../../lib/currentUser';
 import type { MeetupDetail, MeetupDetailSession } from '../../types/meetupDetail';
@@ -52,6 +52,9 @@ function MeetupEditForm({ meetup }: { meetup: MeetupDetail }) {
   const navigate = useNavigate();
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [bookImageUrl, setBookImageUrl] = useState(meetup.bookImageUrl ?? '');
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [imageError, setImageError] = useState('');
   const [sessions, setSessions] = useState(() =>
     meetup.sessions.map((session: MeetupDetailSession) => ({
       sessionId: session.sessionId,
@@ -62,6 +65,23 @@ function MeetupEditForm({ meetup }: { meetup: MeetupDetail }) {
       topic: session.topic,
     })),
   );
+
+  const handleBookImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+
+    try {
+      setIsUploadingImage(true);
+      setImageError('');
+      const { url } = await uploadBookImage(file, getCurrentUserId());
+      setBookImageUrl(url);
+    } catch (error) {
+      setImageError(error instanceof Error ? error.message : '이미지 업로드에 실패했습니다.');
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
 
   const handleSessionChange = (
     index: number,
@@ -85,6 +105,10 @@ function MeetupEditForm({ meetup }: { meetup: MeetupDetail }) {
     const userId = getCurrentUserId();
     if (!userId) {
       setMessage('모임 수정을 위해 로그인이 필요합니다.');
+      return;
+    }
+    if (isUploadingImage) {
+      setMessage('이미지 업로드가 끝난 뒤 저장해 주세요.');
       return;
     }
 
@@ -126,6 +150,7 @@ function MeetupEditForm({ meetup }: { meetup: MeetupDetail }) {
         userId,
         title,
         description,
+        book_image_url: bookImageUrl.trim() || null,
         price,
         sessions: sessions.map((session) => ({
           session_id: session.sessionId,
@@ -163,6 +188,23 @@ function MeetupEditForm({ meetup }: { meetup: MeetupDetail }) {
       />
       <form onSubmit={handleSubmit}>
         <FormSection title="기본 정보">
+          <Field label="도서 이미지">
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              onChange={handleBookImageUpload}
+              disabled={isUploadingImage || isSubmitting}
+            />
+            {isUploadingImage && <p>이미지 업로드 중...</p>}
+            {imageError && <Notice>{imageError}</Notice>}
+            {bookImageUrl && (
+              <img
+                src={bookImageUrl}
+                alt="도서 표지 미리보기"
+                style={{ display: 'block', marginTop: '0.5rem', maxHeight: '160px', objectFit: 'contain' }}
+              />
+            )}
+          </Field>
           <Field label="항해명" required>
             <TextInput name="title" defaultValue={meetup.title} required />
           </Field>
@@ -197,8 +239,8 @@ function MeetupEditForm({ meetup }: { meetup: MeetupDetail }) {
         />
 
         <ActionLink to={`/meetups/${meetup.id}`}>취소</ActionLink>
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? '저장 중...' : '수정 내용 저장'}
+        <Button type="submit" disabled={isSubmitting || isUploadingImage}>
+          {isUploadingImage ? '이미지 업로드 중...' : isSubmitting ? '저장 중...' : '수정 내용 저장'}
         </Button>
         {message && <Notice>{message}</Notice>}
       </form>

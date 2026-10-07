@@ -98,6 +98,7 @@ export function mapMeetupDetailToDetail(detail: MeetupDetailApiResponse): Meetup
     leaderId: meetup.leader_id,
     title: meetup.title,
     book: meetup.book_title,
+    bookImageUrl: meetup.book_image_url,
     captain: meetup.leader_name || '캡틴 미정',
     intro: meetup.description || `${meetup.book_title}을 함께 읽고 이야기를 나누는 모임입니다.`,
     location: '장소 안내 예정',
