@@ -34,7 +34,10 @@ jobs:
         run: |
           npm install
           npm run build --if-present
-          # npm run test --if-present
+          # 테스트(Jest)가 실패하면 배포하지 않음
+          npm test
+          # 배포 패키지에는 jest·supertest 같은 개발 의존성을 포함하지 않음
+          npm prune --omit=dev
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
