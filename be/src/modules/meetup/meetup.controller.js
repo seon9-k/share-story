@@ -5,7 +5,7 @@ const {
 } = require('./meetup.validation');
 const meetupService = require('./meetup.service');
 
-/* POST /meetup/book-image 도서 이미지 업로드. 저장된 파일명을 book_image_url 후보값으로 반환한다. */
+/* POST /meetup/book-image 도서 이미지 업로드. 저장된 파일명을 book_image_url 후보값으로 반환함. */
 function uploadBookImage(req, res) {
   if (!req.file) {
     return res.status(400).json({ success: false, message: '이미지 파일이 필요합니다.' });
@@ -32,7 +32,7 @@ async function createMeetup(req, res, next) {
       return res.status(400).json({ success: false, message: '입력값을 확인해주세요.', errors });
     }
     // Allow a body-supplied leader only for local development tests.
-    // 항해 개설(create)에서는 leader_id와 user_id 일치 여부를 검증하지 않는다.
+    // 항해 개설(create)에서는 leader_id와 user_id 일치 여부를 검증하지 않음.
     const leaderId = getRequestUserId(req, 'leader_id');
     if (!leaderId) {
       return res.status(400).json({ success: false, message: 'leader_id가 필요합니다.' });

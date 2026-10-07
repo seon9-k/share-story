@@ -19,7 +19,11 @@ async function uploadStream(stream, originalname, contentType) {
   const blobName = `${crypto.randomUUID()}${path.extname(originalname).toLowerCase()}`;
   const blockBlob = getContainerClient().getBlockBlobClient(blobName);
   await blockBlob.uploadStream(stream, 4 * 1024 * 1024, 5, {
-    blobHTTPHeaders: { blobContentType: contentType }
+    // 파일명이 UUID라 내용이 바뀌지 않으므로 브라우저·CDN이 오래 캐시하게 함
+    blobHTTPHeaders: {
+      blobContentType: contentType,
+      blobCacheControl: 'public, max-age=31536000, immutable'
+    }
   });
   return { blobName, url: blockBlob.url };
 }

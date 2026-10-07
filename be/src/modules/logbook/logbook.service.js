@@ -37,8 +37,8 @@ async function list({ meetupId, sessionId, userId, paging }) {
   const meetup = await access.meetup(meetupId);
   access.captain(meetup, userId);
   await access.session(meetupId, sessionId);
-  // 신청자를 기준으로 페이지를 구성해 미제출 크루도 유지한다.
-  // hasMany를 별도 조회하여 로그북 조인이 인원 수와 페이지에 영향을 주지 않게 한다.
+  // 신청자를 기준으로 페이지를 구성해 미제출 크루도 유지함.
+  // hasMany를 별도 조회하여 로그북 조인이 인원 수와 페이지에 영향을 주지 않게 함.
   const result = await db.Apply.findAndCountAll({
     where: { meetup_id: meetupId },
     attributes: ['apply_id', 'user_id', 'status'],
@@ -81,4 +81,27 @@ async function remove({ meetupId, sessionId, userId }) {
   });
 }
 
-module.exports = { save, mine, list, remove };
+// 모임장의 '숙제 확인 완료' 승인 (REQ-SES-003). 승인된 크루에게만 Zoom 접속 정보 메일이 발송됨
+// 크루가 다시 제출하면 save()가 is_approved를 false로 되돌리므로 수정본은 다시 확인받아야 함
+async function approve({ meetupId, sessionId, logbookId, userId, approved }) {
+  return db.sequelize.transaction(async (transaction) => {
+    const meetup = await access.meetup(meetupId, transaction);
+    access.captain(meetup, userId);
+    await access.session(meetupId, sessionId, transaction);
+    // 이 모임·회차에 속한 로그북만 대상. 확인 중 크루가 재제출해도 덮어쓰지 않도록 행을 잠금
+    const logbook = await db.Logbook.findOne({
+      where: { logbook_id: logbookId, meetup_id: meetupId, session_id: sessionId },
+      transaction,
+      lock: transaction.LOCK.UPDATE
+    });
+    if (!logbook) fail(404, '로그북을 찾을 수 없습니다.');
+    if (!logbook.submitted_at) fail(409, '제출되지 않은 로그북은 확인 처리할 수 없습니다.');
+    await logbook.update({ is_approved: approved, updated_user_id: userId }, { transaction });
+    return {
+      logbook_id: logbook.logbook_id, session_id: logbook.session_id,
+      apply_id: logbook.apply_id, is_approved: logbook.is_approved
+    };
+  });
+}
+
+module.exports = { save, mine, list, remove, approve };

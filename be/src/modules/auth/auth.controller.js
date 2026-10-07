@@ -3,10 +3,10 @@ const { validateSignup, validateUpdate, rules, MESSAGES, isText } = require('./a
 
 /**
  * [Controller]
- * - 요청(req)에서 필요한 값을 가져옵니다.
- * - Service를 호출합니다.
- * - Service의 처리 결과를 HTTP 응답으로 반환합니다.
- * - 비즈니스 로직은 Service에서 처리합니다.
+ * - 요청(req)에서 필요한 값을 가져옴.
+ * - Service를 호출함.
+ * - Service의 처리 결과를 HTTP 응답으로 반환함.
+ * - 비즈니스 로직은 Service에서 처리함.
  */
 
 // Service의 status 에러는 그대로 응답, 나머지는 errorHandler로 전달
