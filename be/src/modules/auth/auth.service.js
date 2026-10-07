@@ -5,9 +5,9 @@ const { User, Meetup, Apply, sequelize } = require('../../models');
 
 /**
  * [Service]
- * - User와 관련된 비즈니스 로직을 처리합니다.
- * - 필요한 경우 Model을 통해 DB에 접근합니다.
- * - HTTP 요청/응답 객체(req, res)는 직접 다루지 않습니다.
+ * - User와 관련된 비즈니스 로직을 처리함.
+ * - 필요한 경우 Model을 통해 DB에 접근함.
+ * - HTTP 요청/응답 객체(req, res)는 직접 다루지 않음.
  * - 기존에는 로직이 Controller에 있었음 → 위 구조에 맞게 Service로 이동.
  */
 

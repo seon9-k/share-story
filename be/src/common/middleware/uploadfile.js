@@ -20,7 +20,10 @@ const upload = multer({
     limits: { fileSize: 1024 * 1024 * 10 },  // 10MB
     fileFilter(req, file, done) {
         if (ALLOWED_MIME.includes(file.mimetype)) return done(null, true);
-        done(new Error('이미지 파일만 업로드할 수 있음'));
+        // status를 달아 errorHandler가 500이 아닌 400으로 응답하게 함
+        const error = new Error('이미지 파일(jpeg, png, webp, gif)만 업로드할 수 있습니다.');
+        error.status = 400;
+        done(error);
     }
 });
 

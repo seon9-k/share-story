@@ -12,3 +12,6 @@ export interface CrewLogbook extends Crew {
 }
 export const logbookPath = (meetupId: string, sessionId: string) =>
   `/logbook/meetups/${encodeURIComponent(meetupId)}/sessions/${encodeURIComponent(sessionId)}`;
+// 모임장의 '숙제 확인 완료' 승인·취소 (PATCH, body: { is_approved }). 승인된 크루에게만 Zoom 접속 정보 메일이 발송됨
+export const approvalPath = (meetupId: string, sessionId: string, logbookId: string) =>
+  `${logbookPath(meetupId, sessionId)}/logbooks/${encodeURIComponent(logbookId)}/approval`;

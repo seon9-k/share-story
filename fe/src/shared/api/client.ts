@@ -10,9 +10,18 @@ export const setUnauthorizedHandler = (handler: (() => void) | null) => {
 };
 export class ApiError extends Error {
   status: number;
-  constructor(message: string, status: number) {
+  // 서버가 내려준 원문 메시지와 상세 오류 목록. 호출부가 메시지를 다시 조립할 때 사용
+  serverMessage?: string;
+  errors?: unknown[];
+  constructor(
+    message: string,
+    status: number,
+    extra: { serverMessage?: string; errors?: unknown[] } = {},
+  ) {
     super(message);
     this.status = status;
+    this.serverMessage = extra.serverMessage;
+    this.errors = extra.errors;
   }
 }
 // 주소를 생략하면 같은 출처로 요청하여 개발 시 Vite 프록시 사용
@@ -35,6 +44,10 @@ export async function request<T>(path: string, options: RequestInit = {}): Promi
     throw new ApiError(
       body?.message || `요청에 실패했습니다 (${response.status}).`,
       response.status,
+      {
+        serverMessage: body?.message,
+        errors: Array.isArray(body?.errors) ? body.errors : undefined,
+      },
     );
   }
   if (body === null) throw new ApiError('서버 응답을 읽을 수 없습니다.', response.status);

@@ -1,13 +1,13 @@
 # fe(Vite React) → Azure Static Web Apps
 #
-# 빌드는 GitHub Actions 에서 한다. (Oryx 를 쓰지 않음 → Node 버전을 여기서 고정)
+# 빌드는 GitHub Actions 에서 함. (Oryx 를 쓰지 않음 → Node 버전을 여기서 고정)
 # 이미 빌드된 결과를 올리므로 skip_app_build: true.
 #
 # Secret: AZURE_STATIC_WEB_APPS_API_TOKEN_JOLLY_SKY_065E76F00
 #   Azure 포털 > Static Web App > 개요 > 배포 토큰 관리
 #
-# SPA 새로고침 처리는 fe/public/staticwebapp.config.json 이 담당한다.
-# (vite 가 public/ 아래를 dist/ 로 그대로 복사한다)
+# SPA 새로고침 처리는 fe/public/staticwebapp.config.json 이 담당함.
+# (vite 가 public/ 아래를 dist/ 로 그대로 복사함)
 
 name: Deploy fe to Azure Static Web Apps
 
@@ -33,15 +33,22 @@ jobs:
           cache: npm
           cache-dependency-path: fe/package-lock.json
 
-      # VITE_* 는 빌드 시점에 번들로 박힌다.
-      # 값은 리포지토리 Secrets 에서 주입한다 (.env.production 은 더 이상 커밋하지 않음).
+      # VITE_* 는 빌드 시점에 번들로 박힘.
+      # 값은 리포지토리 Secrets 에서 주입함 (.env.production 은 더 이상 커밋하지 않음).
       #   Settings > Secrets and variables > Actions > Secrets
       - name: Build
         working-directory: fe
         env:
           VITE_API_BASE_URL: ${{ secrets.API_BASE_URL }}
         run: |
+          # Static Web Apps에는 API 프록시가 없어 주소가 비면 모든 API 요청이 깨짐 → 빌드 단계에서 차단
+          if [ -z "$VITE_API_BASE_URL" ]; then
+            echo "::error::API_BASE_URL 시크릿이 비어 있습니다. (Settings > Secrets and variables > Actions)"
+            exit 1
+          fi
           npm ci
+          # 테스트(Vitest)가 실패하면 배포하지 않음
+          npm run test:run
           npm run build
 
       - name: Deploy

@@ -64,7 +64,7 @@ function MeetupCreateView() {
       prev.map((session, currentIndex) => {
         if (currentIndex !== index) return session;
         const updated = { ...session, [field]: value };
-        // 시작 시간이 바뀌면 종료 시간을 2시간 뒤로 자동 갱신한다.
+        // 시작 시간이 바뀌면 종료 시간을 2시간 뒤로 자동 갱신함.
         if (field === 'time') updated.endTime = addHoursToTime(value, 2);
         return updated;
       }),

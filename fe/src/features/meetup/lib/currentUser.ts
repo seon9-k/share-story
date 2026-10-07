@@ -2,7 +2,7 @@
 const AUTH_USER_STORAGE_KEY = 'sharestory.user';
 
 export function getCurrentUserId(): string {
-  // 1) 실제 로그인된 사용자(AuthProvider가 저장한 값)를 최우선으로 사용한다.
+  // 1) 실제 로그인된 사용자(AuthProvider가 저장한 값)를 최우선으로 사용함.
   try {
     const raw = localStorage.getItem(AUTH_USER_STORAGE_KEY);
     if (raw) {
@@ -11,7 +11,7 @@ export function getCurrentUserId(): string {
       if (userId) return userId;
     }
   } catch {
-    // 저장된 값이 JSON이 아니면 무시하고 아래 폴백으로 진행한다.
+    // 저장된 값이 JSON이 아니면 무시하고 아래 폴백으로 진행함.
   }
 
   const stored = localStorage.getItem('user_id')?.trim();

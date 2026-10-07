@@ -7,7 +7,7 @@ const bcrypt = require('bcrypt');
 const { User, sequelize } = require('../../src/models');
 
 // API 테스트용 일반 회원.
-// 캡틴 지정과 크루 가입은 API를 통해 진행합니다.
+// 캡틴 지정과 크루 가입은 API를 통해 진행함.
 //
 // 실행:
 // npm run seed
@@ -54,7 +54,7 @@ async function seed() {
     console.log('DB 연결 완료');
 
     // 2. Sequelize 모델을 기준으로 테이블 생성
-    // force: false이므로 기존 테이블/데이터를 삭제하지 않습니다.
+    // force: false이므로 기존 테이블/데이터를 삭제하지 않음.
     await sequelize.sync({
       force: false,
       logging: false,
@@ -81,7 +81,7 @@ async function seed() {
             updated_user_id: user.user_id,
           },
 
-          // soft delete된 회원도 기존 회원으로 판단합니다.
+          // soft delete된 회원도 기존 회원으로 판단함.
           paranoid: false,
 
           transaction,

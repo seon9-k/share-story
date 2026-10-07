@@ -71,7 +71,7 @@ const validateSessions = (sessions = [], { strictCount = true } = {}) => {
   return errors;
 };
 
-/* POST /Meetups 요청 바디 검증. 문제가 없으면 빈 배열을 반환한다. */
+/* POST /Meetups 요청 바디 검증. 문제가 없으면 빈 배열을 반환함. */
 function validateCreateMeetup(body = {}) {
   const errors = [];
   const { title, description, book_title, price, min_capacity, max_capacity, deadline, sessions } = body;

@@ -47,7 +47,7 @@ export function validateMeetup(form: MeetupForm, sessions: MeetupSession[]): str
     return `${pastSessionIndex + 1}회차 날짜는 오늘 이후(또는 오늘)로 선택해 주세요.`;
 }
 
-/* 로그인 개발 전 임시 신원 값(leader_id, user_id)의 존재 및 일치 여부를 검증한다. */
+/* 로그인 개발 전 임시 신원 값(leader_id, user_id)의 존재 및 일치 여부를 검증함. */
 export function validateLeaderUserIdentity(
   leaderId: string | undefined,
   userId: string | undefined,

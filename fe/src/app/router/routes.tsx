@@ -31,7 +31,7 @@ export const routes: RouteObject[] = [
       { path: '/login', element: <LoginPage /> },
       { path: '/signup', element: <SignupPage /> },
       { path: '/meetups', element: <MeetupListPage /> },
-      // 상세 조회는 비로그인 사용자도 볼 수 있어야 하므로 공개 영역에 둔다.
+      // 상세 조회는 비로그인 사용자도 볼 수 있어야 하므로 공개 영역에 둠.
       { path: '/meetups/:meetupId', element: <MeetupDetailPage /> },
       ...legacyMyPagePaths.map((path) => ({
         path,

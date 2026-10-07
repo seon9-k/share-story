@@ -5,6 +5,7 @@ import { applyMeetup, getMeetupDetail } from '../../api/meetupApi';
 import { useAuth } from '../../../auth';
 import type { MeetupDetail } from '../../types/meetupDetail';
 import { EmptyState, ActionLink, Notice } from '../../../../shared/ui';
+import { ApiError } from '../../../../shared/api/client';
 
 import CrewStatsSection from './CrewStatsSection';
 import DetailBottomBar from './DetailBottomBar';
@@ -19,7 +20,7 @@ import styles from './MeetupDetailView.module.css';
 function MeetupDetailView() {
   const { meetupId } = useParams<{ meetupId: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
   const id = Number(meetupId);
 
@@ -61,7 +62,7 @@ function MeetupDetailView() {
   }
 
   const handleJoin = async () => {
-    // 비로그인 사용자가 참여 신청을 누르면 로그인 화면으로 보내고, 로그인 후 이 화면으로 되돌아오게 한다.
+    // 비로그인 사용자가 참여 신청을 누르면 로그인 화면으로 보내고, 로그인 후 이 화면으로 되돌아오게 함.
     if (!user) {
       navigate('/login', { state: { from: `/meetups/${id}` } });
       return;
@@ -78,6 +79,13 @@ function MeetupDetailView() {
       const refreshed = await getMeetupDetail(id);
       if (refreshed) setMeetup(refreshed);
     } catch (error) {
+      // 이 화면은 로그인 없이도 열리는 공개 경로라 RequireAuth의 만료 처리가 적용되지 않음
+      // 토큰이 만료(401)되면 직접 로그아웃하고 로그인 후 이 화면으로 돌아오게 함
+      if (error instanceof ApiError && error.status === 401) {
+        logout();
+        navigate('/login', { state: { from: `/meetups/${id}` } });
+        return;
+      }
       setMessage(error instanceof Error ? error.message : '참여 신청 중 오류가 발생했습니다.');
     } finally {
       setIsJoining(false);
