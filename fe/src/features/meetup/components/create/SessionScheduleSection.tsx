@@ -5,9 +5,9 @@ import { toKoreanDay } from '../../lib/meetupMapper';
 
 import styles from './FormSection.module.css';
 
-// 시·분(오전/오후 세그먼트가 없는 환경이 대부분)을 클릭하는 동안에는 닫히지 않도록 마지막 클릭 후 이만큼 기다린다.
+// 시·분(오전/오후 세그먼트가 없는 환경이 대부분)을 클릭하는 동안에는 닫히지 않도록 마지막 클릭 후 이만큼 기다림.
 const TIME_PICKER_CLOSE_DELAY_MS = 600;
-// 시/분만 고르고 닫히지 않도록, 이 횟수만큼 선택해야만 닫는다(오전/오후 세그먼트가 없으면 시·분 2회로 충분).
+// 시/분만 고르고 닫히지 않도록, 이 횟수만큼 선택해야만 닫음(오전/오후 세그먼트가 없으면 시·분 2회로 충분).
 const MIN_SELECTIONS_BEFORE_CLOSE = 2;
 
 interface SessionScheduleSectionProps {
@@ -19,7 +19,7 @@ interface SessionScheduleSectionProps {
   onAdd: () => void;
   onRemove: (index: number) => void;
 
-  // 항해 개설 화면에서는 종료 시간을 직접 선택하지 못하게 하고 자동 계산값만 노출한다.
+  // 항해 개설 화면에서는 종료 시간을 직접 선택하지 못하게 하고 자동 계산값만 노출함.
   editableEndTime?: boolean;
 }
 
@@ -82,7 +82,7 @@ function SessionScheduleSection({
                   startTimeSelectionCounts.current[index] = 0;
                 }}
                 onKeyDown={(event) => {
-                  // Enter로 직접 확정/닫기를 할 수 있게 허용한다.
+                  // Enter로 직접 확정/닫기를 할 수 있게 허용함.
                   if (event.key !== 'Enter') return;
                   event.preventDefault();
                   if (startTimeCloseTimers.current[index]) clearTimeout(startTimeCloseTimers.current[index]);
@@ -94,11 +94,11 @@ function SessionScheduleSection({
                   const value = event.target.value;
                   const inputElement = event.currentTarget;
                   onChange(index, 'time', value);
-                  // 시(時)만 고른 중간 상태에서는 그대로 두고, 분까지 완성됐을 때만 선택창을 닫는다.
+                  // 시(時)만 고른 중간 상태에서는 그대로 두고, 분까지 완성됐을 때만 선택창을 닫음.
                   if (!/^\d{2}:\d{2}$/.test(value)) return;
                   const nextCount = (startTimeSelectionCounts.current[index] ?? 0) + 1;
                   startTimeSelectionCounts.current[index] = nextCount;
-                  // 시·분·오전/오후을 연이어 클릭하는 동안에는 닫지 않도록, 최소 선택 횟수를 채운 뒤만 타이머를 걸어 닫는다.
+                  // 시·분·오전/오후을 연이어 클릭하는 동안에는 닫지 않도록, 최소 선택 횟수를 채운 뒤만 타이머를 걸어 닫음.
                   if (nextCount < MIN_SELECTIONS_BEFORE_CLOSE) return;
                   if (startTimeCloseTimers.current[index]) clearTimeout(startTimeCloseTimers.current[index]);
                   startTimeCloseTimers.current[index] = setTimeout(() => {

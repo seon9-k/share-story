@@ -17,8 +17,8 @@
     "fix:image-urls": "node scripts/fix-broken-image-urls.js",
     "fix:image-urls:local": "node --env-file=.env.local scripts/fix-broken-image-urls.js",
     "seed:local": "node --env-file=.env.local database/seeders/seed.js",
-    "test": "node --test tests/unit/member.test.js",
-    "test:db": "node --test tests/integration/db-check.test.js"
+    "test": "jest --silent",
+    "test:db": "jest --silent tests/integration"
   },
   "dependencies": {
     "@azure/storage-blob": "^12.33.0",
@@ -38,6 +38,8 @@
     "yamljs": "^0.3.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.14"
+    "jest": "^30.5.2",
+    "nodemon": "^3.1.14",
+    "supertest": "^7.3.1"
   }
 }
