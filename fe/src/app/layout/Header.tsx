@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../../features/auth';
-import logoSrc from '../../shared/assets/logo.png';
+import logoSrc from '../../shared/assets/logo';
 
 import styles from './Header.module.css';
 
