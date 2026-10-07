@@ -52,7 +52,7 @@ function PasswordSection({
         )}
       </div>
 
-      <p className={styles.helpText}>다른 서비스와 겹치지 않는 긴 비밀번호를 사용해 주세요.</p>
+      <p className={styles.helpText}>비밀번호는 영문과 숫자를 포함해 8자 이상으로 입력해 주세요.</p>
     </FormSection>
   );
 }

@@ -28,10 +28,17 @@ async function applyMeetup({ meetupId, userId }) {
     if (existing) fail(409, '이미 신청한 모임입니다.');
     const count = await db.Apply.count({ where: { meetup_id: meetupId }, transaction });
     if (count >= meetup.max_capacity) fail(409, '모집 인원이 마감되었습니다.');
-    return db.Apply.create({
+    const apply = await db.Apply.create({
       meetup_id: meetupId, user_id: userId, status: 'ING',
       created_user_id: userId, updated_user_id: userId
     }, { transaction });
+
+    // 이번 신청으로 정원이 차면 같은 트랜잭션에서 바로 마감
+    if (count + 1 >= meetup.max_capacity) {
+      await meetup.update({ status: 'CLOSED', updated_user_id: userId }, { transaction });
+    }
+
+    return apply;
   });
 }
 

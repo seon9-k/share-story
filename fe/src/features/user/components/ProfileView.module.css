@@ -1,0 +1,10 @@
+/* 기본 정보·수정·비밀번호·탈퇴 섹션 간격 */
+.stack {
+  display: grid;
+  gap: 1.25rem;
+}
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
