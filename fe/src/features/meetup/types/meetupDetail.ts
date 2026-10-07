@@ -32,6 +32,7 @@ export interface MeetupDetail {
   leaderId: string;
   title: string;
   book: string;
+  bookImageUrl: string | null;
   captain: string;
   intro: string;
 
