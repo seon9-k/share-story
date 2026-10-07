@@ -14,6 +14,8 @@
     "seed:zoom-mail": "node scripts/seed-zoom-mail-candidate.js",
     "db:check:local": "node --env-file=.env.local scripts/db-check.js",
     "dev:local": "nodemon --exec \"node --env-file=.env.local\" src/server.js",
+    "fix:image-urls": "node scripts/fix-broken-image-urls.js",
+    "fix:image-urls:local": "node --env-file=.env.local scripts/fix-broken-image-urls.js",
     "seed:local": "node --env-file=.env.local database/seeders/seed.js",
     "test": "node --test tests/unit/member.test.js",
     "test:db": "node --test tests/integration/db-check.test.js"

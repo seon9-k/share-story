@@ -27,9 +27,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 // urlencoded 할때 { extended : false } 옵션은 권장사항.
 
-// 업로드된 도서 이미지 등 정적 파일 제공
-app.use('/files', express.static('files'));
-
 // src/app.js 상단 또는 중간에 테스트용 헬스체크 라우트 추가
 app.get('/ping', (req, res) => {
   console.log('핑 요청 들어옴!');

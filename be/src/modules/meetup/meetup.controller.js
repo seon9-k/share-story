@@ -10,7 +10,8 @@ function uploadBookImage(req, res) {
   if (!req.file) {
     return res.status(400).json({ success: false, message: '이미지 파일이 필요합니다.' });
   }
-  const url = `/files/${req.file.filename}`;
+  // Blob Storage 전환: 로컬 /files 상대경로 대신 Blob 공개 URL을 그대로 반환함 (localhost 주소·재배포 시 파일 유실 방지)
+  const url = req.file.url;
   return res.status(201).json({
     success: true,
     message: '이미지가 업로드되었습니다.',
