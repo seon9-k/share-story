@@ -6,6 +6,8 @@ const params = (req) => ({
 });
 exports.save = endpoint((req) => service.save({ ...params(req), content: content(req.body) }));
 exports.mine = endpoint((req) => service.mine(params(req)));
+// 내가 제출한 모든 모임의 로그북 모아보기 (모임별로 묶음)
+exports.listMine = endpoint((req) => service.listMine({ userId: req.user_id }));
 exports.remove = endpoint((req) => service.remove(params(req)));
 exports.list = endpoint((req) => service.list({ ...params(req), paging: pagination(req.query) }));
 // body.is_approved를 생략하면 승인(true), 보내면 boolean만 허용 (false로 승인 취소 가능)

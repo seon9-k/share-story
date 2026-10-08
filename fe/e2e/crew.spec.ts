@@ -76,10 +76,14 @@ test.describe('크루 시나리오', () => {
     await loginViaUi(page, userId);
     await expect(page).toHaveURL('/');
 
+    // 처음에는 입력창 없이 텍스트로 보이고, 수정 버튼을 눌러야 입력창이 열림
     await page.goto('/mypage/profile');
-    await expect(page.getByLabel('아이디')).toHaveValue(userId);
-    await expect(page.getByLabel('이름')).toHaveValue('K2신규');
-    await expect(page.getByLabel('이메일')).toHaveValue(`${userId}@gmail.com`);
+    await expect(page.getByText(userId, { exact: true })).toBeVisible();
+    await expect(page.getByText('K2신규', { exact: true })).toBeVisible();
+    await expect(page.getByText(`${userId}@gmail.com`, { exact: true })).toBeVisible();
+    await expect(page.getByRole('textbox')).toHaveCount(0);
+    await page.getByRole('button', { name: '회원정보 수정' }).click();
+    await expect(page.getByLabel('닉네임')).toHaveValue('K2신규');
   });
 
   test('K3 신청 오류: 이미 신청한 모임, 정원이 찬 모임', async ({ page }) => {
@@ -93,11 +97,12 @@ test.describe('크루 시나리오', () => {
     await expect(page.getByText('이미 신청한 모임입니다.')).toBeVisible();
 
     // 정원(4명)이 모두 찬 모임은 마지막 신청에서 자동으로 마감되어 더 신청할 수 없음
+    // 화면에서도 '승선 마감'으로 표시되고 참여하기 버튼이 비활성화됨 (신청 API의 거부는 BE 테스트에서 검증)
     const m2 = await createMeetup(api, captain, { minCapacity: 4, maxCapacity: 4 });
     for (const n of ['가', '나', '다', '라']) await apply(api, await createAccount(api, `정원${n}`), m2.meetupId);
     await page.goto(`/meetups/${m2.meetupId}`);
-    await page.getByRole('button', { name: '항해 참여하기' }).click();
-    await expect(page.getByText('신청 가능한 모집 기간이 아닙니다.')).toBeVisible();
+    await expect(page.getByRole('button', { name: '항해 참여하기' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: '승선 마감' })).toBeDisabled();
   });
 
   test('K4 마이페이지 크루 탭: 신청한 모임만 보임', async ({ page }) => {
@@ -118,22 +123,18 @@ test.describe('크루 시나리오', () => {
     await expect(page.getByText('아직 만든 모임이 없어요.')).toBeVisible();
   });
 
-  test('K5 로그북 작성 → 모아보기 → 수정(승인 해제) → 삭제', async ({ page }) => {
+  test('K5 로그북 작성 → 제출한 로그북 → 수정(승인 해제) → 삭제', async ({ page }) => {
     const crew = await createAccount(api, 'K5크루');
     const m = await createMeetup(api, captain);
     await apply(api, crew, m.meetupId);
     await signInAs(page, crew);
     await page.goto(`/meetups/${m.meetupId}/logbooks`);
+    // 작성 탭에는 모든 회차가 아니라 다음 예정 회차(1회차)와 그 로그북 입력창만 보임
     const first = page.locator('article', { hasText: '1회차 · 1회차 주제' });
     await expect(first).toContainText('미제출');
-    // 작성 영역(details)이 닫혀 있을 때만 펼침 (이미 열려 있으면 다시 누르면 접히기 때문)
-    const openEditor = async () => {
-      const details = first.locator('details');
-      if (!(await details.evaluate((el: HTMLDetailsElement) => el.open))) await details.locator('summary').click();
-    };
+    await expect(page.getByRole('heading', { name: /^[234]회차/ })).toHaveCount(0);
 
     // 내용이 없으면 제출할 수 없음
-    await openEditor();
     await expect(first.getByRole('button', { name: '로그북 제출' })).toBeDisabled();
 
     // 작성·제출
@@ -144,10 +145,12 @@ test.describe('크루 시나리오', () => {
     await expect(first).toContainText('제출 완료');
     expect((await myLogbook(api, crew, m, 0))?.content).toBe('첫 번째 독서 기록입니다.');
 
-    // 제출한 로그북 모아보기
-    await page.getByRole('button', { name: '내가 제출한 로그북' }).click();
-    await expect(first.getByText('첫 번째 독서 기록입니다.').first()).toBeVisible();
-    await page.getByRole('button', { name: '회차별 작성' }).click();
+    // 제출한 로그북 탭: 모임 단위로 묶여 읽기 전용으로 보임
+    await page.getByRole('button', { name: '제출한 로그북' }).click();
+    const group = page.locator('section', { has: page.getByRole('heading', { name: m.title }) });
+    await expect(group.getByText('첫 번째 독서 기록입니다.')).toBeVisible();
+    await expect(group.getByRole('textbox')).toHaveCount(0);
+    await page.getByRole('button', { name: '로그북 작성' }).click();
 
     // 캡틴이 승인한 뒤 크루가 수정본을 다시 제출하면 승인이 풀림
     const mine = await api.get(`${BE}/logbook/meetups/${m.meetupId}/sessions/${m.sessionIds[0]}/me`, { headers: { Authorization: `Bearer ${crew.token}` } });
@@ -155,20 +158,42 @@ test.describe('크루 시나리오', () => {
     await approveLogbook(api, captain, m, 0, logbookId);
     expect((await myLogbook(api, crew, m, 0))?.is_approved).toBe(true);
 
-    await openEditor();
     await first.getByLabel('나의 독서 기록').fill('수정한 독서 기록입니다.');
     await first.getByRole('button', { name: '수정하여 다시 제출' }).click();
     await expect(page.getByText('1회차 로그북을 제출했습니다.')).toBeVisible();
     await expect.poll(async () => (await myLogbook(api, crew, m, 0))?.is_approved).toBe(false);
     expect((await myLogbook(api, crew, m, 0))?.content).toBe('수정한 독서 기록입니다.');
 
-    // 삭제 (제출 후 접힌 영역을 다시 펼치고, 확인 창에서 승인)
-    await openEditor();
+    // 삭제 (확인 창에서 승인)
     page.once('dialog', (dialog) => dialog.accept());
     await first.getByRole('button', { name: '로그북 삭제' }).click();
     await expect(page.getByText('1회차 로그북을 삭제했습니다.')).toBeVisible();
     await expect(first).toContainText('미제출');
     expect(await myLogbook(api, crew, m, 0)).toBeNull();
+  });
+
+  test('K5 여러 모임에서 제출한 로그북은 제출한 로그북 탭에 모임 단위로 묶여 보임', async ({ page }) => {
+    const crew = await createAccount(api, 'K5다중');
+    const a = await createMeetup(api, captain);
+    const b = await createMeetup(api, captain);
+    for (const m of [a, b]) await apply(api, crew, m.meetupId);
+    await submitLogbook(api, crew, a, 0, 'A 모임 1회차 기록');
+    await submitLogbook(api, crew, a, 1, 'A 모임 2회차 기록');
+    await submitLogbook(api, crew, b, 0, 'B 모임 1회차 기록');
+    await signInAs(page, crew);
+
+    await page.goto(`/meetups/${a.meetupId}/logbooks`);
+    await page.getByRole('button', { name: '제출한 로그북' }).click();
+
+    const groupA = page.locator('section', { has: page.getByRole('heading', { name: a.title }) });
+    const groupB = page.locator('section', { has: page.getByRole('heading', { name: b.title }) });
+    await expect(groupA.getByRole('heading', { level: 3 })).toHaveText(['1회차 · 1회차 주제', '2회차 · 2회차 주제']);
+    await expect(groupA).toContainText('A 모임 2회차 기록');
+    await expect(groupB.getByRole('heading', { level: 3 })).toHaveText(['1회차 · 1회차 주제']);
+    await expect(groupB).toContainText('B 모임 1회차 기록');
+    // 지금 보는 모임(A)에는 작성 링크가 없고, 다른 모임(B)에는 작성 화면 링크가 있음
+    await expect(groupA.getByRole('link', { name: '로그북 작성하기' })).toHaveCount(0);
+    await expect(groupB.getByRole('link', { name: '로그북 작성하기' })).toHaveAttribute('href', `/meetups/${b.meetupId}/logbooks`);
   });
 
   test('K5 다른 크루의 로그북은 볼 수 없고, 캡틴 전용 화면은 거부됨', async () => {
@@ -236,7 +261,8 @@ test.describe('크루 시나리오', () => {
     await page.getByLabel('닉네임').fill('바뀐닉네임');
     await page.getByRole('button', { name: '저장' }).click();
     await expect(page.getByText('회원정보를 수정했습니다.')).toBeVisible();
-    await expect(page.getByLabel('이름')).toHaveValue('바뀐닉네임');
+    await expect(page.getByText('바뀐닉네임', { exact: true })).toBeVisible();
+    await expect(page.getByRole('textbox')).toHaveCount(0);
 
     // 비밀번호 변경: 현재 비밀번호가 틀리면 거부, 맞으면 새 비밀번호로만 로그인됨
     await page.getByRole('button', { name: '회원정보 수정' }).click();
