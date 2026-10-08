@@ -11,6 +11,7 @@ const crewSetup = () => {
   db.Meetup.findByPk.mockResolvedValue({ meetup_id: '1', leader_id: 'leader01' });
   db.Apply.findOne.mockResolvedValue({ apply_id: 10 });
   db.Session.findOne.mockResolvedValue({ session_id: '2', meetup_id: '1', status: 'SCHEDULED' });
+  db.Session.findAll.mockResolvedValue([]);
 };
 
 beforeEach(() => db.reset());

@@ -4,17 +4,21 @@ import { documentRequest } from '../../../../shared/api/client';
 import { Button, Notice, TextArea } from '../../../../shared/ui';
 import { logbookPath, type Logbook } from '../../types/api';
 import styles from '../../../../shared/ui/Voyage.module.css';
+import editorStyles from './LogbookEditor.module.css';
 
 export default function LogbookEditor({
   meetupId,
   session,
   logbook,
+  lockedMessage,
   onSaved,
   onDeleted,
 }: {
   meetupId: string;
   session: MemberSession;
   logbook: Logbook | null;
+  // 값이 있으면 작성·수정·삭제 불가 상태로 이 안내를 표시
+  lockedMessage?: string;
   onSaved: (book: Logbook) => void;
   onDeleted: () => void;
 }) {
@@ -56,6 +60,13 @@ export default function LogbookEditor({
       로그북 삭제
     </Button>
   );
+  if (lockedMessage)
+    return (
+      <div>
+        <Notice>{lockedMessage}</Notice>
+        <div className={styles.content}>{logbook?.content}</div>
+      </div>
+    );
   // 현재 BE는 취소된 세션만 제출을 막음. 회차별 작성 기간은 아직 미제공
   // 삭제는 취소된 세션에서도 허용
   if (session.status === 'CANCELLED')
@@ -69,6 +80,7 @@ export default function LogbookEditor({
     );
   return (
     <form
+      className={editorStyles.logbookForm}
       onSubmit={async (event) => {
         event.preventDefault();
         if (!content.trim() || submitting) return;
@@ -89,8 +101,11 @@ export default function LogbookEditor({
         }
       }}
     >
-      <label htmlFor={id}>나의 독서 기록</label>
+      <label className={editorStyles.logbookTitle} htmlFor={id}>
+        나의 독서 기록
+      </label>
       <TextArea
+        className={editorStyles.textarea}
         id={id}
         rows={10}
         value={content}

@@ -1,6 +1,10 @@
 const db = require('../../models/index');
 const { Op } = require('sequelize');
 const { sendMail } = require('../../common/services/mailer.service');
+const {
+  isDeadlineBeforeFirstSession,
+  DEADLINE_AFTER_FIRST_SESSION_MESSAGE,
+} = require('./meetup.validation');
 
 const throwHttpError = (status, message) => {
   const error = new Error(message);
@@ -180,6 +184,17 @@ async function updateMeetup({ meetupId, userId, payload }) {
       order: [['session_number', 'ASC']],
       transaction: t,
     });
+    // 마감일·회차 일정을 바꾼 경우에만 수정 결과 기준으로 선후관계를 검사함 (기존 모임의 제목 수정 등은 막지 않음)
+    // 위반하면 던진 에러로 트랜잭션이 롤백되어 변경이 반영되지 않음
+    const changedSchedule =
+      meetupUpdates.deadline !== undefined ||
+      (payload.sessions || []).some((s) => s.sch_date !== undefined || s.sch_time !== undefined);
+    if (
+      changedSchedule &&
+      !isDeadlineBeforeFirstSession(refreshedMeetup.deadline, refreshedSessions)
+    ) {
+      throwHttpError(400, DEADLINE_AFTER_FIRST_SESSION_MESSAGE);
+    }
     return toMeetupDocument({ meetup: refreshedMeetup, sessions: refreshedSessions });
   });
 }

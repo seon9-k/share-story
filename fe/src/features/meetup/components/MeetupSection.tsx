@@ -29,7 +29,7 @@ function MeetupSection() {
       <div className={styles.inner}>
         <div className={styles.header}>
           <div>
-            <p className={styles.eyebrow}>모임 탐색</p>
+            <p className={styles.eyebrow}>항해 탐색</p>
             <h2 className={styles.title}>지금 항해 중인 모임</h2>
           </div>
 

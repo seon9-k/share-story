@@ -57,11 +57,23 @@ describe('MeetupListView (REQ-GRP-002 모임 목록)', () => {
 
   it.each([
     ['RECRUITING', '승선 대기'],
-    ['CLOSED', '승선 대기'],
+    ['CLOSED', '승선 마감'],
     ['IN_PROGRESS', '항해 중'],
-    ['COMPLETED', '입항 완료'],
-  ])('상태 %s는 %s로 표시함', async (status, label) => {
+    ['COMPLETED', '항해 완료'],
+  ])('상태 %s → %s 표시', async (status, label) => {
     server.use(listOf([item({ status })]));
+    renderList();
+
+    expect(await screen.findByText(label)).toBeInTheDocument();
+  });
+
+  // 마감 배치(10분 주기)가 돌기 전에도 마감 일시가 지났으면 화면에서는 마감으로 보여줌
+  it.each([
+    ['마감 일시가 지난 RECRUITING', '2000-01-01T00:00:00Z', '승선 마감'],
+    ['마감 일시가 남은 RECRUITING', '2099-01-01T00:00:00Z', '승선 대기'],
+    ['마감 일시 정보가 없는 RECRUITING', null, '승선 대기'],
+  ])('%s → %s 표시', async (_name, deadline, label) => {
+    server.use(listOf([item({ status: 'RECRUITING', deadline })]));
     renderList();
 
     expect(await screen.findByText(label)).toBeInTheDocument();

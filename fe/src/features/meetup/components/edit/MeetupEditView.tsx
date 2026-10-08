@@ -19,18 +19,21 @@ import {
 } from '../../../../shared/ui';
 export default function MeetupEditView() {
   const { meetupId } = useParams();
-  const [meetup, setMeetup] = useState<MeetupDetail | undefined>(undefined);
-  const [isLoading, setIsLoading] = useState(true);
+  // 조회 결과를 어느 모임(meetupId)의 것인지와 함께 저장하고, 현재 값과 다르면 로딩 중으로 계산함
+  // (effect 안에서 setIsLoading(true)를 호출하면 불필요한 연쇄 렌더가 생겨 파생 값으로 대체함)
+  const [loaded, setLoaded] = useState<{ meetupId?: string; meetup?: MeetupDetail }>();
+  const isLoading = loaded === undefined || loaded.meetupId !== meetupId;
+  const meetup = loaded?.meetup;
 
   useEffect(() => {
     let isMounted = true;
-    setIsLoading(true);
     getMeetupDetail(Number(meetupId))
       .then((detail) => {
-        if (isMounted) setMeetup(detail);
+        if (isMounted) setLoaded({ meetupId, meetup: detail });
       })
-      .finally(() => {
-        if (isMounted) setIsLoading(false);
+      // 조회 실패는 '모임을 찾을 수 없음' 화면으로 처리함 (이전에는 처리되지 않은 오류로 남았음)
+      .catch(() => {
+        if (isMounted) setLoaded({ meetupId });
       });
     return () => {
       isMounted = false;

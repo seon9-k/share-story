@@ -41,6 +41,7 @@ beforeEach(() => {
   };
   db.Session = {
     findOne: async ({ where }) => (where.meetup_id === session.meetup_id ? session : null),
+    findAll: async () => [],
   };
   db.Logbook = {
     findOne: async () => null,
@@ -133,6 +134,25 @@ test('logbook revision updates existing row and resets approval', async () => {
   const result = await logbook.save(args);
   expect(result.content).toBe(args.content);
   expect(result.is_approved).toBe(false);
+  expect(writes).toHaveLength(0);
+});
+
+test('logbook cannot be revised or deleted once the next session has started', async () => {
+  const existing = { deleted_at: null, update: async (values) => values, destroy: async () => {} };
+  db.Logbook.findOne = async () => existing;
+  session.session_number = 1;
+  db.Session.findAll = async () => [{ sch_date: '2020-01-01', sch_st_time: '10:00' }];
+  await rejectsWith(() => logbook.save(args), 409);
+  await rejectsWith(() => logbook.remove(args), 409);
+  // 다음 세션이 아직 시작 전이면 수정 가능
+  db.Session.findAll = async () => [{ sch_date: '2999-01-01', sch_st_time: '10:00' }];
+  expect((await logbook.save(args)).content).toBe(args.content);
+});
+
+test('logbook cannot be written or deleted once the meetup is completed', async () => {
+  meetup.status = 'COMPLETED';
+  await rejectsWith(() => logbook.save(args), 409);
+  await rejectsWith(() => logbook.remove(args), 409);
   expect(writes).toHaveLength(0);
 });
 

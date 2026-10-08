@@ -49,14 +49,41 @@
   line-height: 1.625;
 }
 
-.grid {
-  display: grid;
-  gap: 1.5rem;
+/* 슬라이드 좌우 패딩(0.75rem)이 카드 간격이 되도록 viewport를 같은 폭만큼 넓힘 */
+.viewport {
+  margin: 0 -0.75rem;
+
+  overflow: hidden;
+}
+
+.track {
+  display: flex;
+
+  transform: translateX(calc(var(--index) * -100% / var(--visible)));
+}
+
+.animate {
+  transition: transform 0.6s ease-in-out;
+}
+
+/* 카드가 보이는 개수보다 적으면 이동 없이 가운데 정렬 */
+.static {
+  justify-content: center;
+}
+
+.slide {
+  flex: 0 0 calc(100% / var(--visible));
+
+  box-sizing: border-box;
+  padding: 0 0.75rem;
 }
 
 .card {
   display: flex;
   flex-direction: column;
+
+  height: 100%;
+  box-sizing: border-box;
 
   padding: 1.5rem;
 
@@ -74,9 +101,14 @@
 }
 
 .reviewText {
+  display: -webkit-box;
   flex: 1;
 
   margin: 0;
+  overflow: hidden;
+
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 6;
 
   color: var(--color-body);
 
@@ -103,6 +135,23 @@
 
   background-color: var(--color-divider);
   border-radius: 50%;
+}
+
+.avatarFallback {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+
+  width: 2.5rem;
+  height: 2.5rem;
+
+  color: var(--color-navy);
+  background-color: var(--color-divider);
+  border-radius: 50%;
+
+  font-size: 0.875rem;
+  font-weight: 600;
 }
 
 .reviewerName {
@@ -133,9 +182,5 @@
 
   .title {
     font-size: 2.25rem;
-  }
-
-  .grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }

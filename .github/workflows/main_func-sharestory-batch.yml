@@ -1,0 +1,72 @@
+# Docs for the Azure Web Apps Deploy action: https://github.com/azure/functions-action
+# More GitHub Actions for Azure: https://github.com/Azure/actions
+
+name: Build and deploy Node.js project to Azure Function App - func-sharestory-batch
+
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'functions-batch/**'
+      - '.github/workflows/main_func-sharestory-batch.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: 'Checkout GitHub Action'
+        uses: actions/checkout@v4
+
+      - name: Setup Node 24.x Environment
+        uses: actions/setup-node@v3
+        with:
+          node-version: '24.x'
+
+      - name: 'Resolve Project Dependencies Using Npm'
+        shell: bash
+        run: |
+          pushd './functions-batch'
+          npm install
+          npm run build --if-present
+          popd
+
+      - name: Zip artifact for deployment
+        run: |
+          cd functions-batch
+          zip -r ../release.zip .
+
+      - name: Upload artifact for deployment job
+        uses: actions/upload-artifact@v4
+        with:
+          name: node-app
+          path: release.zip
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Download artifact from build job
+        uses: actions/download-artifact@v4
+        with:
+          name: node-app
+
+      - name: Unzip artifact for deployment
+        run: |
+          unzip release.zip
+          rm release.zip
+
+      - name: 'Run Azure Functions Action'
+        uses: Azure/functions-action@v1
+        id: fa
+        with:
+          app-name: 'func-sharestory-batch'
+          package: '.'
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_523B70A0F3294C31BB6DAC8483E415E0 }}
+          sku: 'flexconsumption'

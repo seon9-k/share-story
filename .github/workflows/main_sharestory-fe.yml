@@ -17,7 +17,7 @@ on:
       - main
     paths:
       - 'fe/**'
-      - '.github/workflows/fe-swa.yml'
+      - '.github/workflows/main_sharestory-fe.yml'
   workflow_dispatch:
 
 jobs:

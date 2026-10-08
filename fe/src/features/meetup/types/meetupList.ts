@@ -1,4 +1,5 @@
-export type MeetupStatus = '항해 중' | '승선 대기' | '입항 완료';
+// RECRUITING 승선 대기 / CLOSED 승선 마감 / IN_PROGRESS 항해 중 / COMPLETED 항해 완료
+export type MeetupStatus = '승선 대기' | '승선 마감' | '항해 중' | '항해 완료';
 
 export interface MeetupListItem {
   id: number;
