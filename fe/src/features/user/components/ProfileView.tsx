@@ -1,25 +1,18 @@
 import { useState } from 'react';
 import { useAuth } from '../../auth';
-import {
-  Button,
-  Field,
-  FormSection,
-  PageContainer,
-  PageHeading,
-  TextInput,
-  Notice,
-} from '../../../shared/ui';
+import { Button, PageContainer, PageHeading, Notice } from '../../../shared/ui';
 import RequestState from '../../../shared/ui/RequestState';
 import { useProfile } from '../hooks/useProfile';
 import styles from './ProfileView.module.css';
 import ProfileEditForm from './ProfileEditForm';
+import ProfileInfo from './ProfileInfo';
 import PasswordChangeForm from './PasswordChangeForm';
 import WithdrawModal from './WithdrawModal';
 export default function ProfileView() {
   const { user } = useAuth();
   // 인증 모듈은 수정하지 않고 이름·이메일은 /member/me 응답 사용
   const profile = useProfile();
-  // 수정 버튼을 눌러야 수정 폼이 열림. 저장하면 다시 조회해 기본 정보에 반영
+  // 조회 화면은 텍스트로만 보여주고, 수정 버튼을 눌러야 입력창(수정 폼)이 열림. 저장하면 다시 조회해 정보에 반영
   const [editing, setEditing] = useState(false);
   const [saved, setSaved] = useState(false);
   // 회원탈퇴 버튼을 누르면 비밀번호 확인 모달이 열림
@@ -32,29 +25,7 @@ export default function ProfileView() {
       />
       <RequestState {...profile} retry={profile.reload} />
       <div className={styles.stack}>
-        {!editing && (
-          <>
-            <FormSection title="기본 정보">
-              <Field label="아이디">
-                <TextInput value={profile.data?.user_id || user?.user_id || ''} readOnly />
-              </Field>
-              <Field label="이름">
-                <TextInput
-                  value={profile.data?.name || ''}
-                  placeholder="제공된 정보가 없습니다."
-                  readOnly
-                />
-              </Field>
-              <Field label="이메일">
-                <TextInput
-                  value={profile.data?.email || ''}
-                  placeholder="제공된 정보가 없습니다."
-                  readOnly
-                />
-              </Field>
-            </FormSection>
-          </>
-        )}
+        {!editing && <ProfileInfo profile={profile.data} userId={user?.user_id || ''} />}
         {saved && !editing && <Notice>회원정보를 수정했습니다.</Notice>}
         {!editing && (
           <div className={styles.actions}>
