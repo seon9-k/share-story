@@ -50,7 +50,10 @@ function getStatusClassName(status: MeetupStatus) {
     case '승선 대기':
       return 'waiting';
 
-    case '입항 완료':
+    case '승선 마감':
+      return 'closed';
+
+    case '항해 완료':
       return 'completed';
   }
 }

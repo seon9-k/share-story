@@ -8,16 +8,24 @@ const KOR_DAY_NAMES = ['일요일', '월요일', '화요일', '수요일', '목�
 const DEFAULT_MEETUP_IMAGE =
   'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=120&h=160&fit=crop&auto=format';
 
-export const toKoreanMeetupStatus = (status: string): MeetupStatus => {
+/**
+ * 모임 상태(BE) → 화면 표기
+ * - RECRUITING 승선 대기 / CLOSED 승선 마감 / IN_PROGRESS 항해 중 / COMPLETED 항해 완료
+ * - 모집 마감 배치(10분 주기)가 돌기 전에도 마감 일시가 지났으면 승선 마감으로 표시함
+ */
+export const toKoreanMeetupStatus = (status: string, deadline?: string | null): MeetupStatus => {
   switch (status) {
     case 'IN_PROGRESS':
       return '항해 중';
     case 'COMPLETED':
-      return '입항 완료';
-    case 'RECRUITING':
+      return '항해 완료';
     case 'CLOSED':
-    default:
-      return '승선 대기';
+      return '승선 마감';
+    case 'RECRUITING':
+    default: {
+      const deadlineTime = deadline ? new Date(deadline).getTime() : NaN;
+      return deadlineTime <= Date.now() ? '승선 마감' : '승선 대기';
+    }
   }
 };
 
@@ -64,7 +72,7 @@ export function mapMeetupListApiItem(item: MeetupListApiItem): MeetupListItem {
     time: item.sch_time || '시간 미정',
     firstDate: toMonthDay(item.sch_st_date),
     lastDate: toMonthDay(item.sch_ed_date),
-    status: toKoreanMeetupStatus(item.status),
+    status: toKoreanMeetupStatus(item.status, item.deadline),
     image: item.book_image_url || DEFAULT_MEETUP_IMAGE,
   };
 }
@@ -85,7 +93,7 @@ export function mapMeetupDetailToListItem(detail: MeetupDetailApiResponse): Meet
     time: firstSession?.sch_time || '시간 미정',
     firstDate: toMonthDay(firstSession?.sch_date),
     lastDate: toMonthDay(lastSession?.sch_date),
-    status: toKoreanMeetupStatus(meetup.status),
+    status: toKoreanMeetupStatus(meetup.status, meetup.deadline),
     image: meetup.book_image_url || DEFAULT_MEETUP_IMAGE,
   };
 }
@@ -108,7 +116,7 @@ export function mapMeetupDetailToDetail(detail: MeetupDetailApiResponse): Meetup
     deadline: meetup.deadline ? toDeadlineText(meetup.deadline) : '일정 안내 예정',
     price: meetup.price ?? null,
     payment: '일시납',
-    status: toKoreanMeetupStatus(meetup.status),
+    status: toKoreanMeetupStatus(meetup.status, meetup.deadline),
     image: meetup.book_image_url || DEFAULT_MEETUP_IMAGE,
     sessions: sessions
       .slice()

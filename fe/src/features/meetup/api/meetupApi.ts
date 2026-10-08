@@ -28,6 +28,7 @@ export interface MeetupListApiItem {
   sch_ed_date: string | null;
   sch_day: string | null;
   sch_time: string | null;
+  deadline?: string | null;
 }
 
 interface MeetupListApiResponse {

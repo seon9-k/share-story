@@ -67,13 +67,6 @@
   background-color: var(--color-ocean);
 }
 
-.editButton:disabled {
-  color: var(--color-control);
-  background-color: var(--color-surface);
-  border-color: var(--color-divider);
-  cursor: not-allowed;
-}
-
 .listButton:hover {
   color: var(--color-navy);
   border-color: var(--color-navy);

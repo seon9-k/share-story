@@ -24,8 +24,11 @@ function MeetupDetailView() {
 
   const id = Number(meetupId);
 
-  const [meetup, setMeetup] = useState<MeetupDetail | undefined>(undefined);
-  const [isLoading, setIsLoading] = useState(true);
+  // 조회 결과를 어느 모임(id)의 것인지와 함께 저장하고, 현재 id와 다르면 로딩 중으로 계산함
+  // (effect 안에서 setIsLoading(true)를 호출하면 불필요한 연쇄 렌더가 생겨 파생 값으로 대체함)
+  const [loaded, setLoaded] = useState<{ id: number; meetup?: MeetupDetail }>();
+  const isLoading = loaded?.id !== id;
+  const meetup = loaded?.meetup;
   const [isJoining, setIsJoining] = useState(false);
   const [message, setMessage] = useState('');
 
@@ -33,13 +36,13 @@ function MeetupDetailView() {
 
   useEffect(() => {
     let isMounted = true;
-    setIsLoading(true);
     getMeetupDetail(id)
       .then((detail) => {
-        if (isMounted) setMeetup(detail);
+        if (isMounted) setLoaded({ id, meetup: detail });
       })
-      .finally(() => {
-        if (isMounted) setIsLoading(false);
+      // 조회 실패는 '모임을 찾을 수 없음' 화면으로 처리함 (이전에는 처리되지 않은 오류로 남았음)
+      .catch(() => {
+        if (isMounted) setLoaded({ id });
       });
     return () => {
       isMounted = false;
@@ -77,7 +80,7 @@ function MeetupDetailView() {
       setMessage('항해 참여 신청이 완료되었습니다.');
 
       const refreshed = await getMeetupDetail(id);
-      if (refreshed) setMeetup(refreshed);
+      if (refreshed) setLoaded({ id, meetup: refreshed });
     } catch (error) {
       // 이 화면은 로그인 없이도 열리는 공개 경로라 RequireAuth의 만료 처리가 적용되지 않음
       // 토큰이 만료(401)되면 직접 로그아웃하고 로그인 후 이 화면으로 돌아오게 함
@@ -124,6 +127,8 @@ function MeetupDetailView() {
       <DetailBottomBar
         meetupId={meetup.id}
         canEdit={isLeader}
+        // 승선 대기일 때만 신청 가능 (마감 일시가 지난 모집 중 모임은 매퍼에서 승선 마감으로 변환됨)
+        canJoin={meetup.status === '승선 대기'}
         onJoin={handleJoin}
         isJoining={isJoining}
       />

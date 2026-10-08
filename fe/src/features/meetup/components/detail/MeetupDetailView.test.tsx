@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { server, API } from '../../../../test/server';
@@ -39,6 +39,14 @@ describe('MeetupDetailView (REQ-GRP-003 모임 상세)', () => {
 
   it('없는 모임이면 안내와 목록 링크를 보여줌', async () => {
     server.use(http.get(`${API}/meetup/1`, () => HttpResponse.json({ success: false }, { status: 404 })));
+    renderDetail();
+
+    expect(await screen.findByText('모임을 찾을 수 없습니다.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '모임 목록' })).toHaveAttribute('href', '/meetups');
+  });
+
+  it('조회가 실패해도 처리되지 않은 오류 없이 안내와 목록 링크를 보여줌', async () => {
+    server.use(http.get(`${API}/meetup/1`, () => HttpResponse.json({ success: false }, { status: 500 })));
     renderDetail();
 
     expect(await screen.findByText('모임을 찾을 수 없습니다.')).toBeInTheDocument();
@@ -136,13 +144,47 @@ describe('MeetupDetailView 참여 신청 (REQ-MEM-001, REQ-PAY-001)', () => {
     expect(screen.getByRole('link', { name: '항해수정' })).toHaveAttribute('href', '/meetups/1/edit');
   });
 
-  it('모임장이 아니면 항해수정은 링크가 아닌 비활성 버튼', async () => {
+  it.each([
+    ['CLOSED', '승선 마감'],
+    ['IN_PROGRESS', '항해 중'],
+    ['COMPLETED', '항해 완료'],
+  ])('상태 %s → %s 표시, 참여하기 비활성화', async (status, label) => {
+    signIn('crew01');
+    serve(detail({ meetup: { status } }));
+    renderDetail();
+    await screen.findByRole('heading', { name: '소설 모임' });
+
+    expect(screen.getAllByText(label).length).toBeGreaterThan(0);
+    expect(screen.queryByRole('button', { name: '항해 참여하기' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '승선 마감' })).toBeDisabled();
+  });
+
+  it('모집 중이어도 마감 일시가 지났으면 승선 마감으로 보이고 참여하기가 비활성화됨', async () => {
+    signIn('crew01');
+    serve(detail({ meetup: { deadline: '2000-01-01T00:00:00' } }));
+    renderDetail();
+    await screen.findByRole('heading', { name: '소설 모임' });
+
+    expect(screen.getByRole('button', { name: '승선 마감' })).toBeDisabled();
+  });
+
+  it('모임장이 아니면 항해수정 버튼이 보이지 않음', async () => {
     signIn('crew01');
     serve();
     renderDetail();
     await screen.findByRole('heading', { name: '소설 모임' });
 
-    expect(screen.queryByRole('link', { name: '항해수정' })).not.toBeInTheDocument();
-    await waitFor(() => expect(screen.getByRole('button', { name: '항해수정' })).toBeDisabled());
+    expect(screen.queryByText('항해수정')).not.toBeInTheDocument();
+    // 수정 버튼이 없어도 목록으로·참여하기는 그대로 보임
+    expect(screen.getByRole('link', { name: '목록으로' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '항해 참여하기' })).toBeEnabled();
+  });
+
+  it('비로그인 사용자에게도 항해수정 버튼이 보이지 않음', async () => {
+    serve();
+    renderDetail();
+    await screen.findByRole('heading', { name: '소설 모임' });
+
+    expect(screen.queryByText('항해수정')).not.toBeInTheDocument();
   });
 });
