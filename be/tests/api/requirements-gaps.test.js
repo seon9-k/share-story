@@ -5,7 +5,6 @@ describe('미구현 요구사항', () => {
   test.todo('REQ-PAY-001 결제(페이게이트) 연동 — 신청은 payment_status PENDING 고정 응답뿐이며 결제 API 없음');
   test.todo('REQ-SES-002 독후감 최소 400자 검증 — PUT /logbook/.../me는 빈 문자열만 거부함');
   test.todo('REQ-SES-002 독후감 제출 마감(모임 2일 전) 검증 — 제출 시점 제한 없음');
-  test.todo('REQ-SES-003 "숙제 확인 완료" 승인 화면(FE) — BE API(PATCH .../logbooks/:id/approval)는 구현됨');
   test.todo('REQ-GRP-005 신청자 목록에 성별·독서량·신청일자 포함 — 현재 apply_id, user_id, name, status만 반환');
   test.todo('REQ-GRP-002 모임 목록 정렬 기준·무한 스크롤(요구사항에 "확인 필요"로 표기됨) — 현재 created_at DESC 페이징');
   test.todo('REQ-GRP-003 모임 상세의 총 금액/월 금액/납부 방법/장소/환불 안내 — price 단일 값, 장소·납부 방법은 FE 고정 문구');
