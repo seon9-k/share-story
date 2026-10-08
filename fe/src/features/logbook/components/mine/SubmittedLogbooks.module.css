@@ -1,0 +1,30 @@
+.group {
+  margin-top: 2rem;
+}
+
+.groupHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 0.75rem;
+
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.groupTitle {
+  margin: 0;
+
+  color: var(--color-navy);
+
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.groupMeta {
+  color: var(--color-secondary);
+
+  font-size: 0.875rem;
+}

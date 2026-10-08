@@ -59,6 +59,49 @@ async function mine({ meetupId, sessionId, userId }) {
   return db.Logbook.findOne({ where: { session_id: sessionId, apply_id: apply.apply_id } });
 }
 
+/**
+ * 내가 제출한 모든 로그북을 모임 단위로 묶어 반환함 (여러 모임에 참여한 경우를 위한 모아보기)
+ * - 본인 신청(apply)에 속한 제출본만 조회하므로 다른 사람의 로그북은 포함되지 않음
+ * - 삭제된 모임·회차의 로그북은 제외하고, 모임은 최근 제출한 순, 회차는 번호순으로 정렬함
+ * - logbook에는 모임과의 모델 관계가 없어 신청 → 로그북 → 모임 순으로 나눠 조회함
+ */
+async function listMine({ userId }) {
+  const applies = await db.Apply.findAll({ where: { user_id: userId }, attributes: ['apply_id', 'meetup_id'] });
+  if (applies.length === 0) return [];
+  const logbooks = await db.Logbook.findAll({
+    where: { apply_id: { [Op.in]: applies.map((apply) => apply.apply_id) }, submitted_at: { [Op.ne]: null } },
+    attributes: ['logbook_id', 'apply_id', 'session_id', 'content', 'submitted_at', 'is_approved'],
+    include: [{ model: db.Session, attributes: ['session_id', 'meetup_id', 'session_number', 'topic', 'sch_date'] }]
+  });
+  const meetupByApply = new Map(applies.map((apply) => [String(apply.apply_id), String(apply.meetup_id)]));
+  const meetups = await db.Meetup.findAll({
+    where: { meetup_id: { [Op.in]: [...new Set(meetupByApply.values())] } },
+    attributes: ['meetup_id', 'title', 'book_title', 'status']
+  });
+  const groups = new Map(meetups.map((meetup) => [String(meetup.meetup_id), {
+    meetup: {
+      meetup_id: String(meetup.meetup_id), title: meetup.title,
+      book_title: meetup.book_title, status: meetup.status
+    },
+    logbooks: []
+  }]));
+  for (const logbook of logbooks) {
+    const group = groups.get(meetupByApply.get(String(logbook.apply_id)));
+    if (!group || !logbook.Session) continue; // 삭제된 모임·회차
+    group.logbooks.push({
+      logbook_id: String(logbook.logbook_id), session_id: String(logbook.session_id),
+      session_number: logbook.Session.session_number, topic: logbook.Session.topic,
+      sch_date: logbook.Session.sch_date, content: logbook.content,
+      submitted_at: logbook.submitted_at, is_approved: logbook.is_approved
+    });
+  }
+  const latest = (group) => Math.max(...group.logbooks.map((l) => new Date(l.submitted_at).getTime()));
+  return [...groups.values()]
+    .filter((group) => group.logbooks.length > 0)
+    .map((group) => ({ ...group, logbooks: group.logbooks.sort((a, b) => a.session_number - b.session_number) }))
+    .sort((a, b) => latest(b) - latest(a));
+}
+
 async function list({ meetupId, sessionId, userId, paging }) {
   const meetup = await access.meetup(meetupId);
   access.captain(meetup, userId);
@@ -131,4 +174,4 @@ async function approve({ meetupId, sessionId, logbookId, userId, approved }) {
   });
 }
 
-module.exports = { save, mine, list, remove, approve };
+module.exports = { save, mine, listMine, list, remove, approve };
