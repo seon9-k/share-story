@@ -36,3 +36,4 @@ dist-ssr
 /e2e/.pgdata
 /e2e/.artifacts
 /.e2e-dist
+/playwright-report
