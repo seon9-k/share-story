@@ -118,6 +118,16 @@
   border-radius: 14px;
   padding: 18px;
 }
+/* 작성 영역은 가로 정렬(flex)이 아니라 요약 아래에 세로로 펼침 */
+.editor {
+  display: block;
+  margin-top: 20px;
+}
+.editor form {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
 .session summary {
   cursor: pointer;
   font-weight: 600;

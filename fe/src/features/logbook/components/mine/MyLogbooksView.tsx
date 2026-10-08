@@ -31,13 +31,37 @@ export default function MyLogbooksView() {
         />
         <RequestState {...sessions} retry={sessions.reload} />
         {sessions.data && (
-          <SessionLogbooks key={meetupId} meetupId={meetupId} sessions={sessions.data} />
+          <SessionLogbooks
+            key={meetupId}
+            meetupId={meetupId}
+            sessions={sessions.data}
+            completed={detail.data?.meetup.status === 'COMPLETED'}
+          />
         )}
       </PageContainer>
     </div>
   );
 }
-function SessionLogbooks({ meetupId, sessions }: { meetupId: string; sessions: MemberSession[] }) {
+// 다음 회차(취소 제외)가 시작되면 이전 회차의 로그북은 수정 불가. BE도 같은 규칙으로 검증
+// 시작 시각은 KST 기준
+function isLocked(session: MemberSession, sessions: MemberSession[]) {
+  const next = sessions
+    .filter((item) => item.session_number > session.session_number && item.status !== 'CANCELLED')
+    .sort((a, b) => a.session_number - b.session_number)[0];
+  if (!next) return false;
+  return (
+    Date.now() >= new Date(`${next.sch_date.slice(0, 10)}T${next.sch_st_time}:00+09:00`).getTime()
+  );
+}
+function SessionLogbooks({
+  meetupId,
+  sessions,
+  completed,
+}: {
+  meetupId: string;
+  sessions: MemberSession[];
+  completed: boolean;
+}) {
   const [mode, setMode] = useState<'write' | 'mine'>('write');
   // 제출(Logbook)·삭제(null) 결과를 회차별로 보관. null이 조회 결과를 덮어 미제출로 표시
   const [saved, setSaved] = useState<Record<string, Logbook | null>>({});
@@ -89,6 +113,12 @@ function SessionLogbooks({ meetupId, sessions }: { meetupId: string; sessions: M
             {sessions.map((session) => {
               const sessionId = String(session.session_id);
               const book = books[sessionId] || null;
+              // 완료된 모임은 모든 회차, 다음 세션이 시작된 회차는 제출본이 있을 때 수정 불가
+              const lockedMessage = completed
+                ? '완료된 모임에는 로그북을 작성하거나 수정할 수 없습니다.'
+                : book && isLocked(session, sessions)
+                  ? '다음 세션이 시작되어 이 로그북은 더 이상 수정할 수 없습니다.'
+                  : undefined;
               return (
                 <article
                   className={styles.session}
@@ -108,12 +138,21 @@ function SessionLogbooks({ meetupId, sessions }: { meetupId: string; sessions: M
                   {mode === 'mine' && book && <div className={styles.content}>{book.content}</div>}
                   {/* 탭 전환 시 편집기를 제거하지 않아 아직 제출하지 않은 입력 유지 */}
                   <div hidden={mode === 'mine'}>
-                    <details className={styles.actions}>
-                      <summary>{book ? '작성한 로그북 보기·수정' : '로그북 작성'}</summary>
+                    <details className={styles.editor}>
+                      <summary>
+                        {lockedMessage
+                          ? book
+                            ? '작성한 로그북 보기'
+                            : '로그북 (작성 기간 종료)'
+                          : book
+                            ? '작성한 로그북 보기·수정'
+                            : '로그북 작성'}
+                      </summary>
                       <LogbookEditor
                         meetupId={meetupId}
                         session={session}
                         logbook={book}
+                        lockedMessage={lockedMessage}
                         onSaved={(value) => {
                           setSaved((previous) => ({ ...previous, [sessionId]: value }));
                           setMessage(`${session.session_number}회차 로그북을 제출했습니다.`);

@@ -2,10 +2,34 @@ const db = require('../../models');
 const access = require('../member/member.access');
 const { fail, pageDocument } = require('../member/member.http');
 const { toCrew } = require('../member/crew.service');
+const { Op } = require('sequelize');
+
+// 모임이 완료되면 모든 회차의 로그북 작성·수정·삭제 불가 (마지막 회차 포함)
+function assertMeetupOpen(meetup) {
+  if (meetup.status === 'COMPLETED') fail(409, '완료된 모임에는 로그북을 작성할 수 없습니다.');
+}
+
+// 다음 회차가 시작되면 이전 회차에 제출한 로그북은 수정·삭제 불가
+// 취소된 회차는 건너뛰고, 시작 시각은 meetup.validation.js와 동일하게 KST로 해석
+async function assertEditable(session, transaction) {
+  const [next] = await db.Session.findAll({
+    where: {
+      meetup_id: session.meetup_id,
+      session_number: { [Op.gt]: session.session_number },
+      status: { [Op.ne]: 'CANCELLED' }
+    },
+    order: [['session_number', 'ASC']], limit: 1, transaction
+  });
+  if (!next) return;
+  const startsAt = new Date(`${String(next.sch_date).slice(0, 10)}T${next.sch_st_time}:00+09:00`);
+  if (Date.now() >= startsAt.getTime()) {
+    fail(409, '다음 세션이 시작되어 이전 세션의 로그북은 수정할 수 없습니다.');
+  }
+}
 
 async function save({ meetupId, sessionId, userId, content }) {
   return db.sequelize.transaction(async (transaction) => {
-    await access.meetup(meetupId, transaction);
+    assertMeetupOpen(await access.meetup(meetupId, transaction));
     const apply = await access.crew(meetupId, userId, transaction);
     const session = await access.session(meetupId, sessionId, transaction);
     if (session.status === 'CANCELLED') fail(409, '취소된 세션에는 로그북을 제출할 수 없습니다.');
@@ -16,6 +40,8 @@ async function save({ meetupId, sessionId, userId, content }) {
     });
     const values = { content, submitted_at: new Date(), is_approved: false, updated_user_id: userId };
     if (existing) {
+      // 삭제된 로그북을 다시 제출하는 경우는 새 제출로 보고 잠그지 않음
+      if (!existing.deleted_at) await assertEditable(session, transaction);
       if (existing.deleted_at) await existing.restore({ transaction });
       return existing.update({ ...values, deleted_user_id: null }, { transaction });
     }
@@ -67,13 +93,14 @@ async function list({ meetupId, sessionId, userId, paging }) {
 // 본인 크루 신청(apply_id) 기준으로만 조회하므로 다른 사람 로그북은 삭제 불가
 async function remove({ meetupId, sessionId, userId }) {
   return db.sequelize.transaction(async (transaction) => {
-    await access.meetup(meetupId, transaction);
+    assertMeetupOpen(await access.meetup(meetupId, transaction));
     const apply = await access.crew(meetupId, userId, transaction);
-    await access.session(meetupId, sessionId, transaction);
+    const session = await access.session(meetupId, sessionId, transaction);
     const logbook = await db.Logbook.findOne({
       where: { session_id: sessionId, apply_id: apply.apply_id }, transaction
     });
     if (!logbook) fail(404, '삭제할 로그북이 없습니다.');
+    await assertEditable(session, transaction);
     // 삭제자 기록 후 deleted_at 설정
     await logbook.update({ deleted_user_id: userId, updated_user_id: userId }, { transaction });
     await logbook.destroy({ transaction });
