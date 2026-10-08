@@ -31,3 +31,8 @@ dist-ssr
 # Local-only backups and tests
 /archive/styles/
 /tests/*
+
+# E2E (Playwright) 임시 산출물
+/e2e/.pgdata
+/e2e/.artifacts
+/.e2e-dist
