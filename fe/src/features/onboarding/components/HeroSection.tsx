@@ -52,18 +52,10 @@ function HeroSection() {
 
           <div className={styles.actions}>
             <Link to="/meetups" className={styles.primaryButton}>
-              모임 탐색하기
+              항해 탐색하기
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M9 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-            </Link>
-
-            <Link to="/login" className={styles.secondaryButton}>
-              로그인
-            </Link>
-
-            <Link to="/signup" className={styles.secondaryButton}>
-              회원가입
             </Link>
           </div>
 
