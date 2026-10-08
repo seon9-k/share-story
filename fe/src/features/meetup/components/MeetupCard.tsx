@@ -11,7 +11,7 @@ interface MeetupCardProps {
 function MeetupCard({ meetup }: MeetupCardProps) {
   const participationRate = ((meetup.members ?? 0) / meetup.maxMembers) * 100;
 
-  const isCompleted = meetup.status === '입항 완료';
+  const isCompleted = meetup.status === '항해 완료';
 
   return (
     <Link to={`/meetups/${meetup.id}`} className={styles.card}>
@@ -68,7 +68,10 @@ function getStatusClassName(status: MeetupStatus) {
     case '승선 대기':
       return 'waiting';
 
-    case '입항 완료':
+    case '승선 마감':
+      return 'closed';
+
+    case '항해 완료':
       return 'completed';
   }
 }

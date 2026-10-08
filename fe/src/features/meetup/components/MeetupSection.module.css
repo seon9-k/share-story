@@ -93,4 +93,9 @@
   .grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+
+  /* 데스크탑은 3열이라 2행(6개)까지만 노출함 */
+  .grid > :nth-child(n + 7) {
+    display: none;
+  }
 }

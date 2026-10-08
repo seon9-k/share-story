@@ -334,6 +334,46 @@ run('배치 SQL (실제 PostgreSQL)', () => {
       expect(await statusOf(today)).toBe('IN_PROGRESS');
       expect(await statusOf(future)).toBe('CLOSED');
     });
+
+    // 모집 마감일이 첫 회차보다 늦게 잡힌 모임도 시작일이 되면 항해 중으로 바뀌어야 함
+    test('모집 중(RECRUITING)이어도 첫 회차 당일이 되면 IN_PROGRESS (모집 마감일이 시작일 이후인 모임)', async () => {
+      const m = await meetup({ status: 'RECRUITING', deadline: hoursFromNow(72) });
+      await sessions(m, [kstDate(0), kstDate(7), kstDate(14), kstDate(21)]);
+      const notYet = await meetup({ status: 'RECRUITING', deadline: hoursFromNow(72) });
+      await sessions(notYet, [kstDate(1), kstDate(8), kstDate(15), kstDate(22)]);
+
+      await batch.startMeetups();
+
+      expect(await statusOf(m)).toBe('IN_PROGRESS');
+      expect(await statusOf(notYet)).toBe('RECRUITING');
+    });
+
+    test('항해 중으로 바뀐 모임은 이후 신청이 막히고 마지막 회차 익일에 COMPLETED가 됨', async () => {
+      const m = await meetup({ status: 'RECRUITING', deadline: hoursFromNow(72) });
+      await sessions(m, [kstDate(-21), kstDate(-14), kstDate(-7), kstDate(-1)]);
+
+      await batch.startMeetups();
+      expect(await statusOf(m)).toBe('IN_PROGRESS');
+
+      await batch.completeFinishedMeetups();
+      expect(await statusOf(m)).toBe('COMPLETED');
+    });
+
+    test('회차가 없거나 삭제·완료된 모임은 시작하지 않고, 다시 실행해도 결과가 같음 (멱등)', async () => {
+      const noSession = await meetup({ status: 'RECRUITING' });
+      const completed = await meetup({ status: 'COMPLETED' });
+      await sessions(completed, [kstDate(-9), kstDate(-8), kstDate(-7), kstDate(-6)]);
+      const started = await meetup({ status: 'RECRUITING' });
+      await sessions(started, [kstDate(0), kstDate(7), kstDate(14), kstDate(21)]);
+
+      await batch.startMeetups();
+      const second = await batch.startMeetups();
+
+      expect(await statusOf(noSession)).toBe('RECRUITING');
+      expect(await statusOf(completed)).toBe('COMPLETED');
+      expect(await statusOf(started)).toBe('IN_PROGRESS');
+      expect(second.meetups.map((x) => x.meetup_id)).not.toContain(started.meetup_id);
+    });
   });
 
   describe('회차 완료 배치 closePastSessions (REQ-BAT-001: 회차 완료일 익일)', () => {

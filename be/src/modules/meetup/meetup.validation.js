@@ -13,6 +13,22 @@ const isValidDate = (value) => {
 
 const isPositiveInt = (value) => Number.isInteger(value) && value > 0;
 
+/**
+ * 모집 마감일(deadline)이 첫 회차 시작 시각(KST)보다 이전인지 확인함.
+ * 마감일이 첫 회차 이후면 모임이 시작돼도 RECRUITING으로 남아 모집 중으로 보이고 신청도 계속 받게 됨.
+ * 회차 날짜·시간을 해석할 수 없으면 다른 검증에 맡기고 통과시킴.
+ */
+const isDeadlineBeforeFirstSession = (deadline, sessions = []) => {
+  const starts = (Array.isArray(sessions) ? sessions : [])
+    // sch_date는 YYYY-MM-DD, sch_st_time은 HH:MM. 서버 시간대와 무관하게 KST(+09:00)로 해석함
+    .map((s) => new Date(`${String(s?.sch_date).slice(0, 10)}T${s?.sch_st_time}:00+09:00`).getTime())
+    .filter((time) => !Number.isNaN(time));
+  if (starts.length === 0 || !isValidDate(deadline)) return true;
+  return new Date(deadline).getTime() < Math.min(...starts);
+};
+
+const DEADLINE_AFTER_FIRST_SESSION_MESSAGE = 'deadline은 첫 회차 시작 시각보다 이전이어야 합니다.';
+
 const validateSessions = (sessions = [], { strictCount = true } = {}) => {
   const errors = [];
   const numberSet = new Set();
@@ -115,8 +131,12 @@ function validateCreateMeetup(body = {}) {
     errors.push('deadline은 현재 시각 이후여야 합니다.');
   }
 
-  errors.push(...validateSessions(sessions, { strictCount: true }));
-
+  const sessionErrors = validateSessions(sessions, { strictCount: true });
+  errors.push(...sessionErrors);
+  // 회차 입력이 올바를 때만 마감일과 첫 회차의 선후관계를 비교함
+  if (sessionErrors.length === 0 && !isDeadlineBeforeFirstSession(deadline, sessions)) {
+    errors.push(DEADLINE_AFTER_FIRST_SESSION_MESSAGE);
+  }
 
   return errors;
 }
@@ -172,4 +192,11 @@ function validateApplyMeetup({ userId, meetupId, body = {} }) {
   return errors;
 }
 
-module.exports = { validateCreateMeetup, validateUpdateMeetup, validateApplyMeetup, SESSION_COUNT };
+module.exports = {
+  validateCreateMeetup,
+  validateUpdateMeetup,
+  validateApplyMeetup,
+  isDeadlineBeforeFirstSession,
+  DEADLINE_AFTER_FIRST_SESSION_MESSAGE,
+  SESSION_COUNT,
+};

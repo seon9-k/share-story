@@ -62,7 +62,10 @@ async function completeFinishedMeetups() {
 
 /**
  * 모임 시작 배치
- * - CLOSED 모임 중 첫 회차 진행일(MIN(sch_date))이 KST 기준 오늘 이하인 모임을 IN_PROGRESS로 변경
+ * - RECRUITING·CLOSED 모임 중 첫 회차 진행일(MIN(sch_date))이 KST 기준 오늘 이하인 모임을 IN_PROGRESS로 변경
+ *   → 시작일이 되면 모집 중(승선 대기)이든 마감이든 항해 중이 되고, 이후 신청은 막힘 (신청은 RECRUITING만 허용)
+ * - RECRUITING도 대상인 이유: 모집 마감일(deadline)이 첫 회차 이후로 잡힌 모임, 같은 시각(00:10)에 도는
+ *   모집 마감 배치보다 먼저 실행된 경우에도 시작일에 맞춰 상태가 바뀌어야 함
  * - 매일 00:10 KST 실행 시 첫 회차 당일 시작 처리됨
  * - 이미 끝난 모임도 IN_PROGRESS가 되지만 종료 배치가 IN_PROGRESS도 받으므로 문제없음
  */
@@ -72,7 +75,7 @@ async function startMeetups() {
        SET status          = 'IN_PROGRESS',
            updated_user_id = :batchUser,
            updated_at      = NOW()
-     WHERE m.status = 'CLOSED'
+     WHERE m.status IN ('RECRUITING', 'CLOSED')
        AND m.deleted_at IS NULL
        AND (
              SELECT MIN(LEFT(s.sch_date, 10)::date)

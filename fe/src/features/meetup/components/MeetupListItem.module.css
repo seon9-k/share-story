@@ -113,6 +113,12 @@
   background-color: var(--color-subtle);
 }
 
+/* 모집 마감: 신청할 수 없는 상태라 대기보다 흐리게 표시 */
+.closed {
+  color: var(--color-control);
+  background-color: var(--color-surface);
+}
+
 .completed {
   color: var(--color-navy);
   background-color: #eef1f4;

@@ -41,7 +41,7 @@ export default function JournalDashboard({ initialView = 'crew' }: { initialView
           description="새로운 책과 사람을 만나 항해를 시작해 보세요."
           action={
             <ActionLink to={role === 'captain' ? '/meetups/create' : '/meetups'}>
-              {role === 'captain' ? '모임 만들기' : '모임 찾아보기'}
+              {role === 'captain' ? '항해 만들기' : '항해 찾아보기'}
             </ActionLink>
           }
         />

@@ -39,14 +39,19 @@ export interface MemberProfile {
   genres: string[];
 }
 export const meetupStatus = {
-  RECRUITING: '모집 중',
-  CLOSED: '모집 마감',
+  RECRUITING: '승선 대기',
+  CLOSED: '승선 마감',
   IN_PROGRESS: '항해 중',
   COMPLETED: '항해 완료',
 };
-// 모집 마감 배치(10분 주기) 반영 전에도 마감 일시가 지났으면 마감으로 표시
-export const meetupStatusLabel = ({ status, deadline }: Pick<MemberMeetup, 'status' | 'deadline'>) =>
-  status === 'RECRUITING' && new Date(deadline) <= new Date() ? meetupStatus.CLOSED : meetupStatus[status];
+// 승선 마감 배치(10분 주기) 반영 전에도 마감 일시가 지났으면 마감으로 표시
+export const meetupStatusLabel = ({
+  status,
+  deadline,
+}: Pick<MemberMeetup, 'status' | 'deadline'>) =>
+  status === 'RECRUITING' && new Date(deadline) <= new Date()
+    ? meetupStatus.CLOSED
+    : meetupStatus[status];
 export const sessionStatus = {
   SCHEDULED: '예정',
   IN_PROGRESS: '진행 중',
