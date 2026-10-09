@@ -134,13 +134,13 @@ describe('MeetupDetailView 참여 신청 (REQ-MEM-001, REQ-PAY-001)', () => {
     expect(localStorage.getItem('sharestory.user')).toBeNull();
   });
 
-  it('모임장 본인에게는 참여하기가 비활성화되고 항해수정 링크가 열림', async () => {
+  it('모임장 본인에게는 참여하기 버튼이 보이지 않고 항해수정 링크가 열림', async () => {
     signIn('leader01');
     serve();
     renderDetail();
     await screen.findByRole('heading', { name: '소설 모임' });
 
-    expect(screen.getByRole('button', { name: '항해 참여하기' })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: '항해 참여하기' })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: '항해수정' })).toHaveAttribute('href', '/meetups/1/edit');
   });
 
@@ -186,5 +186,48 @@ describe('MeetupDetailView 참여 신청 (REQ-MEM-001, REQ-PAY-001)', () => {
     await screen.findByRole('heading', { name: '소설 모임' });
 
     expect(screen.queryByText('항해수정')).not.toBeInTheDocument();
+  });
+});
+
+describe('MeetupDetailView 후기 섹션', () => {
+  const review = {
+    review_id: 'r1', apply_id: 'a1', content: '좋은 모임이었어요', rating: 5,
+    reviewed_at: '2099-05-01T00:00:00', apply: { user_id: 'crew02', User: { name: '크루2' } },
+  };
+  const serveReviews = (items: unknown[]) =>
+    server.use(
+      http.get(`${API}/review/meetups/1`, () =>
+        HttpResponse.json({ success: true, document: { items, nextPage: null } }),
+      ),
+    );
+
+  it('종료된 모임에 후기가 있으면 후기 섹션을 보여줌', async () => {
+    signIn('crew01');
+    serve(detail({ meetup: { status: 'COMPLETED' } }));
+    serveReviews([review]);
+    renderDetail();
+
+    expect(await screen.findByText('좋은 모임이었어요')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '항해 후기' })).toBeInTheDocument();
+  });
+
+  it('종료된 모임이라도 후기가 없으면 후기 섹션이 보이지 않음', async () => {
+    signIn('crew01');
+    serve(detail({ meetup: { status: 'COMPLETED' } }));
+    serveReviews([]);
+    renderDetail();
+    await screen.findByRole('heading', { name: '소설 모임' });
+
+    expect(screen.queryByRole('heading', { name: '항해 후기' })).not.toBeInTheDocument();
+  });
+
+  it.each(['RECRUITING', 'IN_PROGRESS'])('%s 모임에는 후기 섹션이 보이지 않음', async (status) => {
+    signIn('crew01');
+    serve(detail({ meetup: { status } }));
+    serveReviews([review]);
+    renderDetail();
+    await screen.findByRole('heading', { name: '소설 모임' });
+
+    expect(screen.queryByRole('heading', { name: '항해 후기' })).not.toBeInTheDocument();
   });
 });
