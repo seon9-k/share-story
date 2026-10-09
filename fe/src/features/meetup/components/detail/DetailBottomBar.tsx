@@ -32,22 +32,18 @@ function DetailBottomBar({
           </Link>
         )}
 
-        {/* 본인 항해이거나 모집이 끝난 항해에는 참여 신청할 수 없으므로 버튼을 비활성화함(숨기지 않음). */}
-        <button
-          type="button"
-          className={styles.joinButton}
-          onClick={onJoin}
-          disabled={canEdit || !canJoin || isJoining}
-          title={
-            canEdit
-              ? '본인이 개설한 항해에는 참여 신청할 수 없습니다.'
-              : !canJoin
-                ? '모집이 마감된 항해입니다.'
-                : undefined
-          }
-        >
-          {isJoining ? '신청 중...' : canJoin ? '항해 참여하기' : '승선 마감'}
-        </button>
+        {/* 본인이 개설한 항해에는 신청할 수 없으므로 버튼 자체를 보여주지 않음. 모집이 끝난 항해는 비활성화함 */}
+        {!canEdit && (
+          <button
+            type="button"
+            className={styles.joinButton}
+            onClick={onJoin}
+            disabled={!canJoin || isJoining}
+            title={!canJoin ? '모집이 마감된 항해입니다.' : undefined}
+          >
+            {isJoining ? '신청 중...' : canJoin ? '항해 참여하기' : '승선 마감'}
+          </button>
+        )}
       </div>
     </div>
   );
