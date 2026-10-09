@@ -12,6 +12,7 @@ import DetailBottomBar from './DetailBottomBar';
 import LogbookRequirement from './LogbookRequirement';
 import MeetupHeroSection from './MeetupHeroSection';
 import MeetupInfoSection from './MeetupInfoSection';
+import MeetupReviewsSection from './MeetupReviewsSection';
 import MeetupSessionsSection from './MeetupSessionsSection';
 import RelatedMeetupsSection from './RelatedMeetupsSection';
 
@@ -119,6 +120,9 @@ function MeetupDetailView() {
         <CrewStatsSection stats={meetup.stats} />
 
         <LogbookRequirement />
+
+        {/* 후기 조회는 로그인이 필요하므로 종료된 모임을 로그인 상태로 볼 때만 요청함 */}
+        {meetup.status === '항해 완료' && user && <MeetupReviewsSection meetupId={meetup.id} />}
 
         <RelatedMeetupsSection meetups={meetup.relatedMeetups} />
       </div>
