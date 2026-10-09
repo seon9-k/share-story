@@ -18,6 +18,20 @@ jobs:
     permissions:
       contents: read #This is required for actions/checkout
 
+    # 통합 테스트(실제 PostgreSQL)용 일회용 DB. 이 job 안에서만 떠 있다가 끝나면 사라짐
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
     defaults:
       run:
         working-directory: be
@@ -36,8 +50,17 @@ jobs:
           npm run build --if-present
           # 테스트(Jest)가 실패하면 배포하지 않음
           npm test
-          # 배포 패키지에는 jest·supertest 같은 개발 의존성을 포함하지 않음
-          npm prune --omit=dev
+
+      # 배치 SQL·조인·날짜 계산은 목(mock)으로 검증할 수 없어 실제 PostgreSQL에서 확인함 (REQ-OPS-003)
+      # 실패하면 배포하지 않음. 위 service 컨테이너는 이 job 전용 일회용 DB라 운영 DB와 무관함
+      - name: Integration tests (PostgreSQL)
+        env:
+          TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/postgres
+        run: npm run test:db
+
+      - name: Remove dev dependencies
+        # 배포 패키지에는 jest·supertest 같은 개발 의존성을 포함하지 않음
+        run: npm prune --omit=dev
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
